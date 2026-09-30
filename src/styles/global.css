@@ -1,0 +1,574 @@
+/* ==========================================================================
+   Klinika Dentare Dr. Petriti & Dr. Vlera · visual system
+   ========================================================================== */
+
+:root {
+  /* Palette, derived from the clinic logo */
+  --crimson: #c9143c;
+  --crimson-deep: #8e0f2d;
+  --blush: #f7eaed;
+  --paper: #faf9f7;
+  --stone: #efece7;
+  --sand: #e4dfd8;
+  --ink: #171717;
+  --ink-soft: #2a2827;
+  --muted: #625d58;
+  --muted-light: #a39d96;
+  --line: rgb(23 23 23 / 0.13);
+  --line-light: rgb(250 249 247 / 0.2);
+
+  /* Type */
+  /* One family throughout: Helvetica Neue. Arial is the metric-compatible fallback on Windows/Android. */
+  --sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+  /* Scale: desktop maxima 56 / 48 / 40 / 28 px, mobile minima 34 / 30 / 26 / 21 px */
+  --fs-display: clamp(2.125rem, 3.9vw, 3.5rem);
+  --fs-h1: clamp(1.875rem, 3.2vw, 3rem);
+  --fs-h2: clamp(1.625rem, 2.6vw, 2.5rem);
+  --fs-h3: clamp(1.3125rem, 1.7vw, 1.75rem);
+  --fs-statement: clamp(1.3125rem, 2vw, 1.875rem);
+  --fs-lead: clamp(1.0625rem, 1.15vw, 1.125rem);
+  --fs-body: 1rem;
+  --fs-small: 0.875rem;
+  --fs-label: 0.75rem;
+
+  /* Space */
+  --gutter: clamp(20px, 4.4vw, 72px);
+  --col-gap: clamp(16px, 2vw, 32px);
+  --section: clamp(64px, 7vw, 112px);
+  --section-sm: clamp(48px, 5vw, 80px);
+  --max: 1680px;
+  --header-h: 90px;
+
+  /* Motion */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+@media (max-width: 760px) {
+  :root {
+    --header-h: 68px;
+  }
+}
+
+/* ---------- Reset ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+* {
+  margin: 0;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+html:not(.lenis) {
+  scroll-behavior: smooth;
+}
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--fs-body);
+  line-height: 1.6;
+  font-weight: 400;
+  font-feature-settings: 'kern' 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: clip;
+}
+img,
+picture,
+video,
+svg,
+iframe {
+  display: block;
+  max-width: 100%;
+}
+img {
+  height: auto;
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+button {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+ul,
+ol {
+  list-style: none;
+  padding: 0;
+}
+::selection {
+  background: var(--crimson);
+  color: var(--paper);
+}
+:focus-visible {
+  outline: 1.5px solid var(--crimson);
+  outline-offset: 4px;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.skip-link {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 200;
+  padding: 12px 18px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: var(--fs-small);
+  transform: translateY(-160%);
+  transition: transform 0.3s var(--ease);
+}
+.skip-link:focus {
+  transform: none;
+}
+
+/* ---------- Layout ---------- */
+.container {
+  width: 100%;
+  max-width: var(--max);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--col-gap);
+}
+.section {
+  padding-block: var(--section);
+}
+
+/* ---------- Typography ---------- */
+.display,
+.h1,
+.h2,
+.h3,
+.statement {
+  font-family: var(--sans);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  color: inherit;
+  text-wrap: balance;
+}
+.display {
+  font-size: var(--fs-display);
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+}
+.h1 {
+  font-size: var(--fs-h1);
+  line-height: 1.06;
+  letter-spacing: -0.022em;
+  max-width: 17em;
+}
+.h2 {
+  font-size: var(--fs-h2);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  max-width: 18em;
+}
+.h3 {
+  font-size: var(--fs-h3);
+  line-height: 1.18;
+  letter-spacing: -0.012em;
+  font-weight: 400;
+}
+.statement {
+  font-size: var(--fs-statement);
+  line-height: 1.28;
+  letter-spacing: -0.015em;
+}
+em,
+.italic {
+  font-style: italic;
+}
+/* Headings never use faux italics: Satoshi is set upright throughout */
+.display em,
+.h1 em,
+.h2 em,
+.h3 em {
+  font-style: normal;
+}
+.lead {
+  font-size: var(--fs-lead);
+  line-height: 1.62;
+  color: var(--muted);
+  max-width: 32em;
+  text-wrap: pretty;
+}
+.body {
+  color: var(--muted);
+  max-width: 34em;
+  text-wrap: pretty;
+}
+.body p + p,
+.lead + .lead {
+  margin-top: 1.1em;
+}
+.small {
+  font-size: var(--fs-small);
+}
+
+/* Section label: a short crimson rule followed by small caps text */
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--sans);
+  font-size: var(--fs-label);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--crimson);
+  line-height: 1;
+}
+.label::before {
+  content: '';
+  width: 28px;
+  height: 1px;
+  background: currentColor;
+  flex: none;
+}
+.label--plain::before {
+  display: none;
+}
+.label--light {
+  color: var(--paper);
+}
+.label--light::before {
+  background: var(--crimson);
+}
+.index-num {
+  font-family: var(--sans);
+  font-size: var(--fs-label);
+  letter-spacing: 0.12em;
+  font-weight: 500;
+  color: var(--muted-light);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Buttons & links ---------- */
+.btn {
+  --btn-bg: transparent;
+  --btn-fg: currentColor;
+  --btn-bd: currentColor;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 54px;
+  padding: 0 28px;
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  border: 1px solid var(--btn-bd);
+  font-family: var(--sans);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  isolation: isolate;
+  transition:
+    color 0.5s var(--ease),
+    border-color 0.5s var(--ease),
+    background-color 0.5s var(--ease);
+}
+.btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--btn-fill, var(--crimson-deep));
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform 0.6s var(--ease);
+}
+.btn:hover::before {
+  transform: scaleY(1);
+}
+.btn .arrow {
+  width: 22px;
+  height: 10px;
+  flex: none;
+  transition: transform 0.6s var(--ease);
+}
+.btn:hover .arrow {
+  transform: translateX(5px);
+}
+.btn--primary {
+  --btn-bg: var(--crimson);
+  --btn-fg: #fff;
+  --btn-bd: var(--crimson);
+  --btn-fill: var(--crimson-deep);
+}
+.btn--primary:hover {
+  --btn-bd: var(--crimson-deep);
+}
+.btn--ghost {
+  --btn-bd: rgb(23 23 23 / 0.3);
+  --btn-fill: var(--ink);
+}
+.btn--ghost:hover {
+  color: var(--paper);
+  --btn-bd: var(--ink);
+}
+.btn--light {
+  --btn-bd: rgb(250 249 247 / 0.45);
+  --btn-fg: var(--paper);
+  --btn-fill: var(--paper);
+}
+.btn--light:hover {
+  color: var(--ink);
+  --btn-bd: var(--paper);
+}
+
+/* Underlined text link that redraws on hover */
+.link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 500;
+  font-size: 0.9375rem;
+  padding-bottom: 6px;
+}
+.link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: currentColor;
+  transform-origin: right;
+  transition: transform 0.7s var(--ease);
+}
+.link:hover::after {
+  transform: scaleX(0);
+}
+.link .arrow {
+  width: 20px;
+  height: 9px;
+  transition: transform 0.6s var(--ease);
+}
+.link:hover .arrow {
+  transform: translateX(4px);
+}
+.link--crimson {
+  color: var(--crimson);
+}
+
+/* Contact-channel icons */
+.icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+/* ---------- Media ---------- */
+.media {
+  position: relative;
+  overflow: hidden;
+  background: var(--stone);
+}
+.media img,
+.media video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Wrapper for parallax: taller than its frame so it can travel */
+.media [data-parallax] {
+  position: absolute;
+  inset: -9% 0;
+  height: 118%;
+  width: 100%;
+}
+.media [data-parallax] img {
+  height: 100%;
+}
+/* ---------- Placeholders: information not yet supplied by the clinic ---------- */
+.ph {
+  background: rgb(201 20 60 / 0.07);
+  box-shadow: inset 0 -1px 0 rgb(201 20 60 / 0.55);
+  padding: 0 0.18em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  cursor: help;
+}
+.on-dark .ph {
+  background: rgb(250 249 247 / 0.08);
+  box-shadow: inset 0 -1px 0 rgb(250 249 247 / 0.5);
+}
+.sample-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--crimson);
+  border: 1px dashed rgb(201 20 60 / 0.5);
+  padding: 5px 9px 4px;
+  line-height: 1.2;
+}
+
+/* ---------- Hairline accordion (FAQ) ---------- */
+.accordion {
+  border-top: 1px solid var(--line);
+}
+.accordion details {
+  border-bottom: 1px solid var(--line);
+}
+.accordion summary {
+  display: grid;
+  grid-template-columns: 1fr 20px;
+  gap: 24px;
+  align-items: center;
+  padding: 28px 0;
+  cursor: pointer;
+  list-style: none;
+  font-size: clamp(1.0625rem, 1.3vw, 1.25rem);
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  line-height: 1.35;
+  transition: color 0.4s var(--ease);
+}
+.accordion summary::-webkit-details-marker {
+  display: none;
+}
+.accordion summary:hover {
+  color: var(--crimson);
+}
+.accordion .plus {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  justify-self: end;
+}
+.accordion .plus::before,
+.accordion .plus::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transition: transform 0.5s var(--ease);
+}
+.accordion .plus::after {
+  transform: rotate(90deg);
+}
+.accordion details[open] .plus::after {
+  transform: rotate(0deg);
+}
+.accordion .answer {
+  overflow: hidden;
+}
+.accordion .answer-inner {
+  padding: 0 0 32px;
+  max-width: 40em;
+  color: var(--muted);
+}
+
+/* ---------- Reveal initial states (only when motion is allowed and JS is running) ---------- */
+html.motion [data-reveal='fade'] {
+  opacity: 0;
+  transform: translateY(26px);
+}
+html.motion [data-reveal='mask'] {
+  clip-path: inset(0 0 100% 0);
+}
+html.motion [data-reveal='mask-side'] {
+  clip-path: inset(0 100% 0 0);
+}
+html.motion [data-split],
+html.motion [data-type] {
+  visibility: hidden;
+}
+
+/* Typing caret produced by main.ts: zero width, so moving it never reflows the text */
+.type-caret {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 1em;
+  vertical-align: -0.12em;
+}
+.type-caret::after {
+  content: '';
+  position: absolute;
+  left: 0.06em;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--crimson);
+  animation: type-blink 1s steps(1) infinite;
+}
+.type-caret.is-typing::after {
+  animation: none;
+}
+@keyframes type-blink {
+  50% {
+    opacity: 0;
+  }
+}
+html.motion [data-reveal='line'] {
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+/* Split-line wrapper produced by motion.ts */
+.split-line {
+  display: block;
+  overflow: clip;
+  overflow-clip-margin: 0.2em;
+  padding-bottom: 0.06em;
+  margin-bottom: -0.06em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,104 @@
+---
+import { Image } from 'astro:assets';
+import Arrow from './Arrow.astro';
+import Icon from './Icon.astro';
+import { useT, paths, type Lang } from '../i18n';
+import { links } from '../config/site';
+import bg from '../assets/photos/mirror-blur.jpg';
+
+interface Props {
+  lang: Lang;
+  heading?: string;
+  text?: string;
+}
+const { lang } = Astro.props;
+const t = useT(lang);
+const heading = Astro.props.heading ?? t.cta.heading;
+const text = Astro.props.text ?? t.cta.text;
+---
+
+<section class="cta on-dark" aria-labelledby="cta-title">
+  <div class="bg media">
+    <div data-parallax="10">
+      <Image src={bg} alt="" widths={[800, 1200, 1600, 2000]} sizes="100vw" />
+    </div>
+  </div>
+  <div class="shade" aria-hidden="true"></div>
+
+  <div class="inner container">
+    <h2 id="cta-title" class="h1 heading" data-split>{heading}</h2>
+    <p class="text" data-reveal="fade">{text}</p>
+    <div class="actions" data-reveal="fade">
+      <a class="btn btn--primary" href={links.tel} data-book><Icon name="phone" class="icon ic" />{t.common.book}<Arrow /></a>
+      <a class="btn btn--light" href={links.whatsapp} target="_blank" rel="noopener"><Icon name="whatsapp" class="icon ic" />WhatsApp</a>
+      <a class="btn btn--light" href={links.viber}><Icon name="viber" class="icon ic" />Viber</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cta {
+    position: relative;
+    overflow: hidden;
+    color: var(--paper);
+    background: var(--ink);
+    padding-block: clamp(80px, 9vw, 140px);
+  }
+  .bg {
+    position: absolute;
+    inset: 0;
+    background: var(--ink);
+  }
+  .shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgb(14 12 12 / 0.55), rgb(14 12 12 / 0.72));
+  }
+  .inner {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    gap: 32px;
+    justify-items: center;
+    text-align: center;
+  }
+  .heading {
+    max-width: 15em;
+    font-weight: 300;
+    color: var(--paper);
+  }
+  .text {
+    max-width: 30em;
+    color: rgb(250 249 247 / 0.8);
+    font-size: var(--fs-lead);
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .ic {
+    width: 19px;
+    height: 19px;
+  }
+  @media (max-width: 600px) {
+    .inner {
+      justify-items: start;
+      text-align: left;
+    }
+    .actions {
+      justify-content: flex-start;
+      width: 100%;
+    }
+    .actions .btn {
+      flex: 1 1 100%;
+      justify-content: space-between;
+    }
+    .actions .btn:not(.btn--primary) {
+      flex: 1 1 40%;
+      justify-content: center;
+    }
+  }
+</style>

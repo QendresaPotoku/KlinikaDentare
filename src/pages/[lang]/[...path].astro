@@ -1,0 +1,99 @@
+---
+/**
+ * All secondary pages, with localised URL segments:
+ *   /sq/trajtimet/…  /en/treatments/…  /de/behandlungen/…
+ *   /{lang}/{treatments}/{category}/{sub-treatment}/
+ *   /{lang}/turizmi-dentar|dental-tourism|zahntourismus/   /{lang}/galeria|gallery|galerie/   /{lang}/ekipi|team/
+ */
+import Base from '../../layouts/Base.astro';
+import TreatmentIndex from '../../components/pages/TreatmentIndex.astro';
+import TreatmentDetail from '../../components/pages/TreatmentDetail.astro';
+import DiasporaPage from '../../components/pages/DiasporaPage.astro';
+import GalleryPage from '../../components/pages/GalleryPage.astro';
+import TeamPage from '../../components/pages/TeamPage.astro';
+import { languages, segments, useT, paths, alternatesFor, type Lang } from '../../i18n';
+import { treatments, type Treatment, type SubTreatment } from '../../data/treatments';
+import { site } from '../../config/site';
+
+type Props =
+  | { kind: 'treatments' }
+  | { kind: 'treatment'; treatment: Treatment; sub?: SubTreatment }
+  | { kind: 'diaspora' }
+  | { kind: 'gallery' }
+  | { kind: 'team' };
+
+export function getStaticPaths() {
+  return languages.flatMap((lang) => {
+    const s = segments[lang];
+    return [
+      { params: { lang, path: s.treatments }, props: { kind: 'treatments' } },
+      { params: { lang, path: s.diaspora }, props: { kind: 'diaspora' } },
+      { params: { lang, path: s.gallery }, props: { kind: 'gallery' } },
+      { params: { lang, path: s.team }, props: { kind: 'team' } },
+      ...treatments.map((treatment) => ({
+        params: { lang, path: `${s.treatments}/${treatment.copy[lang].slug}` },
+        props: { kind: 'treatment', treatment },
+      })),
+      ...treatments.flatMap((treatment) =>
+        treatment.children.map((sub) => ({
+          params: { lang, path: `${s.treatments}/${treatment.copy[lang].slug}/${sub.copy[lang].slug}` },
+          props: { kind: 'treatment', treatment, sub },
+        })),
+      ),
+    ];
+  });
+}
+
+const lang = Astro.params.lang as Lang;
+const t = useT(lang);
+const props = Astro.props as Props;
+
+let title = '';
+let description = '';
+let alternates = alternatesFor(paths.home);
+let headerVariant: 'overlay' | 'light' = 'light';
+
+switch (props.kind) {
+  case 'treatments':
+    title = `${t.treatmentPage.indexTitle} · ${site.shortName}`;
+    description = t.treatmentPage.indexIntro;
+    alternates = alternatesFor(paths.treatments);
+    break;
+  case 'treatment': {
+    const { treatment, sub } = props;
+    const c = (sub ?? treatment).copy[lang];
+    title = `${c.name} · ${site.shortName}, ${t.hero.location.split(',')[0]}`;
+    description = c.seoDescription ?? `${c.name}. ${c.summary} ${t.treatmentPage.consultText}`;
+    alternates = alternatesFor((l) =>
+      sub
+        ? paths.subTreatment(l, treatment.copy[l].slug, sub.copy[l].slug)
+        : paths.treatment(l, treatment.copy[l].slug),
+    );
+    break;
+  }
+  case 'diaspora':
+    title = `${t.diasporaPage.title} · ${site.shortName}`;
+    description = t.diasporaPage.description;
+    alternates = alternatesFor(paths.diaspora);
+    headerVariant = 'overlay';
+    break;
+  case 'team':
+    title = `${t.team.title} · ${site.shortName}`;
+    description = t.team.intro;
+    alternates = alternatesFor(paths.team);
+    break;
+  case 'gallery':
+    title = `${t.gallery.pageTitle} · ${site.shortName}`;
+    description = t.gallery.pageIntro;
+    alternates = alternatesFor(paths.gallery);
+    break;
+}
+---
+
+<Base lang={lang} title={title} description={description} alternates={alternates} headerVariant={headerVariant}>
+  {props.kind === 'treatments' && <TreatmentIndex lang={lang} />}
+  {props.kind === 'treatment' && <TreatmentDetail lang={lang} treatment={props.treatment} sub={props.sub} />}
+  {props.kind === 'diaspora' && <DiasporaPage lang={lang} />}
+  {props.kind === 'gallery' && <GalleryPage lang={lang} />}
+  {props.kind === 'team' && <TeamPage lang={lang} />}
+</Base>

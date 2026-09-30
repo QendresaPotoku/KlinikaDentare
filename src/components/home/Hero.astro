@@ -1,0 +1,197 @@
+---
+/**
+ * Opening frame: near-black field, an architectural close-up of clinic equipment on the right,
+ * and a restrained typographic block low on the left. No people. The photograph is illustrative stock
+ * until the clinic supplies its own.
+ */
+import { Image } from 'astro:assets';
+import Arrow from '../Arrow.astro';
+import Icon from '../Icon.astro';
+import { useT, paths, type Lang } from '../../i18n';
+import { links } from '../../config/site';
+import photo from '../../assets/photos/hero-instruments.jpg';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useT(lang);
+
+---
+
+<section class="hero on-dark" data-hero="cinematic" aria-labelledby="hero-title">
+  <div class="photo" aria-hidden="true">
+    <div class="photo-move">
+      <Image
+        src={photo}
+        alt=""
+        widths={[800, 1200, 1600, 2000, 2600]}
+        sizes="(max-width: 760px) 100vw, 60vw"
+        loading="eager"
+        fetchpriority="high"
+      />
+    </div>
+  </div>
+
+  <div class="hero-content container">
+    <p class="eyebrow" data-split data-immediate data-delay="0.2">
+      {t.hero.eyebrow}<span class="dot" aria-hidden="true">·</span>{t.hero.location.split(',')[0]}
+    </p>
+    <p class="clinic" data-type data-delay="0.5">Dr. Petriti &amp; Dr. Vlera</p>
+    <h1 id="hero-title" class="name" data-type>{t.hero.headline}</h1>
+    <p class="sub" data-split data-immediate data-delay="0.55">{t.hero.sub}</p>
+    <div class="cta-wrap rise">
+      <a class="btn btn--primary" href={paths.section(lang, 'contact')} data-book>
+        {t.hero.cta1}<Arrow />
+      </a>
+      <a class="btn btn--light" href={links.whatsapp} target="_blank" rel="noopener">
+        <Icon name="whatsapp" class="wa" />WhatsApp
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100svh;
+    min-height: 600px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    color: var(--paper);
+    background: #121010;
+  }
+
+  /* ---------- Photograph: right 58%, feathered into the dark on its left edge ---------- */
+  .photo {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 58%;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 42%);
+    mask-image: linear-gradient(to right, transparent 0%, #000 42%);
+  }
+  .photo-move {
+    position: absolute;
+    inset: 0;
+    will-change: transform;
+  }
+  .photo :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 62% 50%;
+    /* Deep, quiet grade so the grey studio tones sink into the near-black field */
+    filter: brightness(0.62) contrast(1.18) saturate(0.55);
+    transform-origin: 60% 50%;
+    will-change: transform;
+  }
+
+  /* ---------- Typography, low on the left ---------- */
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    padding-bottom: clamp(48px, 9vh, 96px);
+  }
+  .eyebrow {
+    font-size: var(--fs-label);
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    line-height: 1.2;
+    color: var(--paper);
+  }
+  .dot {
+    margin: 0 0.7em;
+    color: var(--crimson);
+  }
+  .clinic {
+    margin-top: 20px;
+    font-size: clamp(1.25rem, 1.9vw, 1.75rem);
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: var(--paper);
+  }
+  .name {
+    margin-top: 16px;
+    max-width: 13ch;
+    font-size: clamp(2.75rem, 5.4vw, 5rem);
+    font-weight: 300;
+    line-height: 1.02;
+    letter-spacing: -0.028em;
+    color: var(--paper);
+  }
+  .sub {
+    margin-top: 24px;
+    max-width: 34rem;
+    font-size: clamp(1rem, 1.2vw, 1.125rem);
+    line-height: 1.55;
+    color: rgb(250 249 247 / 0.78);
+  }
+  .cta-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 36px;
+    overflow: hidden;
+  }
+  .wa {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+  /* Masked rise (motion only) */
+  :global(html.motion) .rise > * {
+    transform: translateY(110%);
+  }
+  :global(html.motion) .photo :global(img) {
+    opacity: 0;
+  }
+  @media (max-width: 1024px) {
+    .photo {
+      width: 70%;
+    }
+  }
+  @media (max-width: 760px) {
+    .hero {
+      min-height: 620px;
+    }
+    /* Photograph takes the upper part of the frame, feathered at the bottom into the text area */
+    .photo {
+      left: 0;
+      width: 100%;
+      bottom: 34%;
+      -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 100%);
+      mask-image: linear-gradient(to bottom, #000 45%, transparent 100%);
+    }
+    .photo :global(img) {
+      object-position: 70% 40%;
+    }
+    .hero-content {
+      padding-bottom: 40px;
+    }
+    .clinic {
+      margin-top: 14px;
+      font-size: 1.125rem;
+    }
+    .name {
+      margin-top: 12px;
+      font-size: clamp(2.375rem, 11vw, 3rem);
+    }
+    .sub {
+      margin-top: 16px;
+      font-size: 0.9375rem;
+    }
+    .cta-wrap {
+      margin-top: 24px;
+    }
+    .cta-wrap .btn {
+      flex: 1 1 auto;
+      padding: 0 20px;
+    }
+  }
+</style>

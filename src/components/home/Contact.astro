@@ -1,0 +1,308 @@
+---
+import Icon from '../Icon.astro';
+import Arrow from '../Arrow.astro';
+import { useT, ph, type Lang } from '../../i18n';
+import { site, links } from '../../config/site';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useT(lang);
+---
+
+<section class="contact section" id="contact" aria-labelledby="contact-title">
+  <div class="container grid">
+    <!-- Left: everything to read and tap. Right: the map, sized to balance the column. -->
+    <div class="info">
+      <div class="head">
+        <p class="label" data-reveal="fade">{t.contact.label}</p>
+        <h2 id="contact-title" class="h2" data-split>{t.contact.heading}</h2>
+      </div>
+
+      <div class="channels" data-reveal="fade">
+        <a class="channel" href={links.tel}>
+          <Icon name="phone" />
+          <span class="ch-label">{t.common.call}</span>
+          <span class="ch-value" set:html={ph(site.phone.display, lang)} />
+          <Arrow />
+        </a>
+        <a class="channel" href={links.whatsapp} target="_blank" rel="noopener">
+          <Icon name="whatsapp" />
+          <span class="ch-label">WhatsApp</span>
+          <span class="ch-value">{t.contact.write}</span>
+          <Arrow />
+        </a>
+        <a class="channel" href={links.viber}>
+          <Icon name="viber" />
+          <span class="ch-label">Viber</span>
+          <span class="ch-value">{t.contact.write}</span>
+          <Arrow />
+        </a>
+      </div>
+
+      <dl class="details" data-reveal="fade">
+        <div>
+          <dt>{t.contact.address}</dt>
+          <dd>
+            <span set:html={ph(site.address.line1, lang)} /><br />{site.address.line2}
+            <a class="directions" href={links.maps} target="_blank" rel="noopener">
+              {t.contact.directions}<Arrow />
+            </a>
+          </dd>
+        </div>
+        <div>
+          <dt>{t.contact.email}</dt>
+          <dd><a class="email" href={`mailto:${site.email}`}>{site.email}</a></dd>
+        </div>
+        <div>
+          <dt>{t.contact.hours}</dt>
+          <dd>
+            <ul class="hours">
+              {site.hours.map((h) => (
+                <li>
+                  <span>{t.contact.days[h.days]}</span>
+                  <span set:html={h.time === 'closed' ? ph(`[[${t.common.closed}]]`, lang) : ph(h.time, lang)} />
+                </li>
+              ))}
+            </ul>
+          </dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="map-col" data-reveal="fade">
+      <!-- Speech-bubble shape for the map: a circle with a short tail at the upper left -->
+      <svg class="clip-defs" width="0" height="0" aria-hidden="true" focusable="false">
+        <clipPath id="map-bubble" clipPathUnits="objectBoundingBox">
+          <circle cx="0.5" cy="0.5" r="0.46" />
+          <path d="M 0.105 0.285 L 0.005 0.02 L 0.285 0.105 Z" />
+        </clipPath>
+      </svg>
+      <div class="map media">
+        <iframe
+          title={t.contact.mapTitle}
+          src={links.mapEmbed}
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          allowfullscreen></iframe>
+        <!-- The embed is centred on the clinic, so the dot marks it at the centre of the bubble -->
+        <span class="pin" aria-hidden="true"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Warm stone ground separates Contact from the FAQ above without adding a new colour */
+  .contact {
+    background: var(--stone);
+    padding-block: var(--section-sm);
+  }
+  .contact .grid {
+    align-items: center;
+  }
+  .info {
+    grid-column: 1 / span 6;
+    display: grid;
+    gap: clamp(28px, 3vw, 40px);
+  }
+  .head {
+    display: grid;
+    gap: 20px;
+  }
+  .channels {
+    border-top: 1px solid var(--line);
+  }
+  .channel {
+    display: grid;
+    grid-template-columns: 24px 110px 1fr auto;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line);
+    transition: color 0.4s var(--ease);
+  }
+  .channel :global(.icon) {
+    width: 22px;
+    height: 22px;
+    color: var(--crimson);
+  }
+  .ch-label {
+    font-weight: 500;
+  }
+  .ch-value {
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+  .channel :global(.arrow) {
+    width: 20px;
+    transition: transform 0.6s var(--ease);
+  }
+  .channel:hover {
+    color: var(--crimson);
+  }
+  .channel:hover :global(.arrow) {
+    transform: translateX(6px);
+  }
+
+  .details {
+    display: grid;
+    gap: 16px;
+  }
+  /* 150px = icon + label columns of the channel rows, so the values start on the same vertical line */
+  .details > div {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 16px;
+  }
+  .details dt {
+    font-size: var(--fs-label);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted-light);
+    padding-top: 0.35em;
+  }
+  .directions {
+    display: flex;
+    width: fit-content;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    color: var(--crimson);
+    font-size: 0.9375rem;
+    font-weight: 500;
+  }
+  .directions :global(.arrow) {
+    width: 18px;
+    transition: transform 0.6s var(--ease);
+  }
+  .directions:hover :global(.arrow) {
+    transform: translateX(6px);
+  }
+  .email {
+    overflow-wrap: anywhere;
+  }
+  .email:hover {
+    color: var(--crimson);
+  }
+  .hours {
+    max-width: 360px;
+  }
+  .hours li span:last-child {
+    white-space: nowrap;
+  }
+  .hours li {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 2px 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .map-col {
+    grid-column: 8 / span 5;
+  }
+  .clip-defs {
+    position: absolute;
+    width: 0;
+    height: 0;
+  }
+  .map {
+    width: min(100%, 480px);
+    margin-inline: auto;
+    aspect-ratio: 1;
+    background: transparent;
+    -webkit-clip-path: url(#map-bubble);
+    clip-path: url(#map-bubble);
+  }
+  /* The iframe is larger than the bubble so Google's corner controls fall outside the shape */
+  .map iframe {
+    position: absolute;
+    top: -70px;
+    left: -70px;
+    width: calc(100% + 140px);
+    height: calc(100% + 140px);
+    max-width: none;
+    border: 0;
+    /* "Night" map: Google's light map inverted to near-black with pale streets */
+    filter: grayscale(1) invert(0.92) contrast(1.15) brightness(0.95);
+  }
+  /* Crimson location dot with a soft pulse; clicks pass through to the map */
+  .pin {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border-radius: 50%;
+    background: var(--crimson);
+    box-shadow: 0 0 0 3px rgb(255 255 255 / 0.9);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .pin::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: var(--crimson);
+    animation: pin-pulse 2s var(--ease) infinite;
+  }
+  @keyframes pin-pulse {
+    from {
+      transform: scale(1);
+      opacity: 0.55;
+    }
+    to {
+      transform: scale(3.2);
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pin::after {
+      animation: none;
+      opacity: 0;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    .info {
+      grid-column: 1 / span 7;
+    }
+    .map-col {
+      grid-column: 8 / -1;
+    }
+    .details > div {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+  }
+  @media (max-width: 800px) {
+    .info,
+    .map-col {
+      grid-column: 1 / -1;
+    }
+    .map-col {
+      margin-top: 24px;
+    }
+    .map {
+      width: min(100%, 340px);
+    }
+    .channel {
+      grid-template-columns: 24px 1fr auto;
+      padding: 18px 0;
+    }
+    .ch-value {
+      grid-column: 2;
+      grid-row: 2;
+      margin-top: -12px;
+    }
+    .channel :global(.arrow) {
+      grid-row: 1 / span 2;
+      grid-column: 3;
+    }
+    .channel :global(.icon) {
+      grid-row: 1 / span 2;
+    }
+  }
+</style>

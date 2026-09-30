@@ -1,0 +1,169 @@
+---
+import type { ImageMetadata } from 'astro';
+import { Image } from 'astro:assets';
+import Arrow from '../Arrow.astro';
+import { useT, paths, type Lang } from '../../i18n';
+import { gallery } from '../../data/gallery';
+import roomLight from '../../assets/photos/room-light.jpg';
+import roomWide from '../../assets/photos/room-wide.jpg';
+import xray from '../../assets/photos/xray-review.jpg';
+import mirror from '../../assets/photos/mirror-blur.jpg';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useT(lang);
+const c = t.gallery.categories;
+
+// Alt text is shared with the gallery page so both stay in sync.
+const altFor = (img: ImageMetadata) => gallery.find((g) => g.image === img)?.alt ?? '';
+
+const tiles = [
+  { img: roomWide, cat: c.interior, cls: 'g1', sizes: '(max-width: 760px) 100vw, 50vw' },
+  { img: mirror, cat: c.treatment, cls: 'g2', sizes: '(max-width: 760px) 50vw, 25vw' },
+  { img: xray, cat: c.team, cls: 'g3', sizes: '(max-width: 760px) 50vw, 25vw' },
+  { img: roomLight, cat: c.interior, cls: 'g4', sizes: '(max-width: 760px) 100vw, 25vw' },
+];
+---
+
+<section class="gallery section" aria-labelledby="gallery-title">
+  <div class="container">
+    <header class="head">
+      <div>
+        <p class="label" data-reveal="fade">{t.gallery.label}</p>
+        <h2 id="gallery-title" class="h2" data-split>{t.gallery.heading}</h2>
+      </div>
+      <a class="link" href={paths.gallery(lang)} data-reveal="fade">{t.gallery.all}<Arrow /></a>
+    </header>
+
+    <ul class="mosaic" role="list">
+      {tiles.map((tile, i) => (
+        <li class={`tile ${tile.cls}`}>
+          <a href={paths.gallery(lang)} class="tile-media media" data-reveal="mask">
+            <Image src={tile.img} alt={altFor(tile.img)} widths={[500, 900, 1300, 1700]} sizes={tile.sizes} />
+            <span class="cap">
+              <span class="cap-num">{String(i + 1).padStart(2, '0')}</span>
+              <span class="cap-cat">{tile.cat}</span>
+              <span class="cap-go" aria-hidden="true"><Arrow /></span>
+            </span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  /* Stone separates it from the Doctors section above, which is also on paper */
+  .gallery {
+    background: var(--stone);
+  }
+  .head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 32px;
+    flex-wrap: wrap;
+    margin-bottom: clamp(32px, 4vw, 56px);
+  }
+  .head > div {
+    display: grid;
+    gap: 28px;
+  }
+
+  /* Bento: one large landscape, one tall portrait, two stacked */
+  .mosaic {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: repeat(2, clamp(200px, 18vw, 300px));
+    gap: var(--col-gap);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .tile {
+    min-width: 0;
+    min-height: 0;
+  }
+  .g1 { grid-column: 1 / span 6; grid-row: 1 / span 2; }
+  .g2 { grid-column: 7 / span 3; grid-row: 1 / span 2; }
+  .g3 { grid-column: 10 / span 3; grid-row: 1; }
+  .g4 { grid-column: 10 / span 3; grid-row: 2; }
+
+  .tile-media {
+    display: block;
+    height: 100%;
+    color: var(--paper);
+  }
+  .tile-media :global(img) {
+    transition: transform 1.6s var(--ease);
+  }
+  .tile-media:hover :global(img),
+  .tile-media:focus-visible :global(img) {
+    transform: scale(1.045);
+  }
+  /* Clip-path from the reveal would cut an outer outline, so draw it inside */
+  .tile-media:focus-visible {
+    outline: 2px solid var(--paper);
+    outline-offset: -6px;
+  }
+
+  /* Caption sits on the photo over a soft scrim for legibility */
+  .cap {
+    position: absolute;
+    inset: auto 0 0 0;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 48px 20px 18px;
+    background: linear-gradient(to top, rgb(23 23 23 / 0.55), rgb(23 23 23 / 0));
+    font-size: var(--fs-small);
+    pointer-events: none;
+  }
+  .cap-num {
+    font-size: var(--fs-label);
+    letter-spacing: 0.12em;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.75;
+  }
+  .cap-go {
+    margin-left: auto;
+    align-self: center;
+    display: inline-flex;
+    width: 22px;
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: opacity 0.5s var(--ease), transform 0.5s var(--ease);
+  }
+  .tile-media:hover .cap-go,
+  .tile-media:focus-visible .cap-go {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (max-width: 1024px) {
+    .mosaic {
+      grid-template-rows: repeat(2, clamp(180px, 24vw, 260px));
+    }
+  }
+
+  /* Phones: large photo on top, two side by side, one wide below */
+  @media (max-width: 760px) {
+    .mosaic {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: none;
+      gap: 12px;
+    }
+    .g1 { grid-column: 1 / -1; grid-row: auto; aspect-ratio: 4 / 3; }
+    .g2 { grid-column: 1; grid-row: auto; aspect-ratio: 3 / 4; }
+    .g3 { grid-column: 2; grid-row: auto; aspect-ratio: 3 / 4; }
+    .g4 { grid-column: 1 / -1; grid-row: auto; aspect-ratio: 16 / 10; }
+    .cap {
+      padding: 36px 14px 12px;
+      gap: 10px;
+    }
+    .cap-go {
+      display: none;
+    }
+  }
+</style>

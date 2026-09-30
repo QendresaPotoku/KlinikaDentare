@@ -1,0 +1,55 @@
+---
+import Base from '../../layouts/Base.astro';
+import Hero from '../../components/home/Hero.astro';
+// import Intro from '../../components/home/Intro.astro';
+import Treatments from '../../components/home/Treatments.astro';
+import Approach from '../../components/home/Approach.astro';
+import Doctors from '../../components/home/Doctors.astro';
+import Video from '../../components/home/Video.astro';
+import Testimonials from '../../components/home/Testimonials.astro';
+import Cases from '../../components/home/Cases.astro';
+import GalleryPreview from '../../components/home/GalleryPreview.astro';
+import Diaspora from '../../components/home/Diaspora.astro';
+import Faq from '../../components/Faq.astro';
+import Contact from '../../components/home/Contact.astro';
+import ClosingCta from '../../components/ClosingCta.astro';
+import { cases } from '../../data/cases';
+import { languages, useT, paths, alternatesFor, type Lang } from '../../i18n';
+
+export function getStaticPaths() {
+  return languages.map((lang) => ({ params: { lang } }));
+}
+
+const lang = Astro.params.lang as Lang;
+const t = useT(lang);
+---
+
+<Base
+  lang={lang}
+  title={t.meta.homeTitle}
+  description={t.meta.homeDescription}
+  alternates={alternatesFor(paths.home)}
+  headerVariant="overlay"
+>
+  <div class="hero-wrap">
+    <Hero lang={lang} />
+    {/* <Intro lang={lang} /> */}
+  </div>
+  <Treatments lang={lang} />
+  <Approach lang={lang} />
+  <Doctors lang={lang} />
+  <GalleryPreview lang={lang} />
+  <Video lang={lang} />
+  <Testimonials lang={lang} />
+  {cases.length > 0 && <Cases lang={lang} />}
+  <Diaspora lang={lang} />
+  <Faq lang={lang} id="faq" label={t.faq.label} heading={t.faq.heading} items={t.faq.items} />
+  <Contact lang={lang} />
+  <ClosingCta lang={lang} />
+</Base>
+
+<style>
+  .hero-wrap {
+    position: relative;
+  }
+</style>

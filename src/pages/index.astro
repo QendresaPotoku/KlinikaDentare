@@ -1,0 +1,31 @@
+---
+// Root: send visitors to the homepage in their language.
+// Order: the language they chose on an earlier visit, then their device language,
+// then English for devices in any other language. Without JavaScript: Albanian.
+import { paths, defaultLang } from '../i18n';
+const target = paths.home(defaultLang);
+---
+<!doctype html>
+<html lang="sq">
+  <head>
+    <meta charset="utf-8" />
+    <title>Klinika Dentare Dr. Petriti &amp; Dr. Vlera</title>
+    <link rel="canonical" href={target} />
+    <script is:inline>
+      (function () {
+        var supported = ['sq', 'en', 'de'];
+        var saved = null;
+        try {
+          saved = localStorage.getItem('lang');
+        } catch (e) {}
+        var device = (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ''])
+          .map(function (l) { return String(l).slice(0, 2).toLowerCase(); })
+          .filter(function (l) { return supported.indexOf(l) !== -1; })[0];
+        var lang = supported.indexOf(saved) !== -1 ? saved : device || 'en';
+        location.replace('/' + lang + '/');
+      })();
+    </script>
+    <noscript><meta http-equiv="refresh" content={`0;url=${target}`} /></noscript>
+  </head>
+  <body><a href={target}>Klinika Dentare Dr. Petriti &amp; Dr. Vlera</a></body>
+</html>

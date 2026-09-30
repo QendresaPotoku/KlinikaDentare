@@ -1,0 +1,7 @@
+---
+// Renders copy that may contain [[placeholders]] (see ph() in src/i18n).
+import { ph, type Lang } from '../i18n';
+interface Props { text: string; lang: Lang; as?: string; class?: string; [key: string]: unknown }
+const { text, lang, as: Tag = 'span', class: className, ...rest } = Astro.props;
+---
+<Tag class={className} {...rest} set:html={ph(text, lang)} />

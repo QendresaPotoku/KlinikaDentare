@@ -1,0 +1,388 @@
+---
+import LogoMark from './LogoMark.astro';
+import Arrow from './Arrow.astro';
+import Icon from './Icon.astro';
+import { languages, useT, paths, type Lang, type Alternates } from '../i18n';
+import { links, site } from '../config/site';
+import { ph } from '../i18n';
+
+interface Props {
+  lang: Lang;
+  alternates: Alternates;
+  /** 'overlay' = transparent with light text over a dark hero; 'light' = transparent with dark text. */
+  variant?: 'overlay' | 'light';
+}
+const { lang, alternates, variant = 'light' } = Astro.props;
+const t = useT(lang);
+
+const nav = [
+  { label: t.nav.treatments, href: paths.treatments(lang) },
+  { label: t.nav.doctors, href: paths.team(lang) },
+  { label: t.nav.gallery, href: paths.gallery(lang) },
+  { label: t.nav.diaspora, href: paths.diaspora(lang) },
+  { label: t.nav.contact, href: paths.section(lang, 'contact') },
+];
+const current = Astro.url.pathname;
+// 'page' on the exact page; 'true' anywhere inside that section (e.g. a single treatment under Treatments)
+const currentState = (href: string) =>
+  current === href ? 'page' : !href.includes('#') && current.startsWith(href) ? 'true' : undefined;
+---
+
+<header class="site-header" data-header data-variant={variant}>
+  <div class="bar container">
+    <a class="brand" href={paths.home(lang)} aria-label={site.name}>
+      <LogoMark class="brand-mark" />
+      <span class="brand-text">
+        <span class="brand-top">{t.hero.eyebrow}</span>
+        <span class="brand-bottom">Dr. Petriti &amp; Dr. Vlera</span>
+      </span>
+    </a>
+
+    <nav class="nav" aria-label="Main">
+      <ul>
+        {nav.map((item) => (
+          <li>
+            <a href={item.href} aria-current={currentState(item.href)}>
+              {item.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <div class="actions">
+      <ul class="langs" aria-label={t.nav.language}>
+        {languages.map((l) => (
+          <li>
+            <a href={alternates[l]} hreflang={l} lang={l} aria-current={l === lang ? 'true' : undefined}>
+              {l.toUpperCase()}
+            </a>
+          </li>
+        ))}
+      </ul>
+      <a class="btn btn--primary book" href={paths.section(lang, 'contact')} data-book>
+        {t.common.book}
+      </a>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu" data-menu-toggle>
+        <span class="menu-label" data-open-label={t.nav.menu} data-close-label={t.nav.close}>{t.nav.menu}</span>
+        <span class="menu-lines" aria-hidden="true"><i></i><i></i></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="mobile-menu" id="mobile-menu" data-menu hidden>
+  <div class="mm-inner container">
+    <nav aria-label="Mobile">
+      <ol class="mm-links">
+        {nav.map((item, i) => (
+          <li>
+            <a href={item.href} data-menu-link>
+              <span class="index-num">{String(i + 1).padStart(2, '0')}</span>
+              <span class="mm-label">{item.label}</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+    <div class="mm-foot">
+      <div class="mm-contact">
+        <a href={links.tel}><Icon name="phone" /><span set:html={ph(site.phone.display, lang)} /></a>
+        <a href={links.whatsapp} target="_blank" rel="noopener"><Icon name="whatsapp" />WhatsApp</a>
+        <a href={links.viber}><Icon name="viber" />Viber</a>
+      </div>
+      <ul class="mm-langs" aria-label={t.nav.language}>
+        {languages.map((l) => (
+          <li>
+            <a href={alternates[l]} hreflang={l} lang={l} aria-current={l === lang ? 'true' : undefined}>
+              {l.toUpperCase()}
+            </a>
+          </li>
+        ))}
+      </ul>
+      <a class="btn btn--primary" href={paths.section(lang, 'contact')} data-menu-link data-book>
+        {t.common.book}
+        <Arrow />
+      </a>
+    </div>
+  </div>
+</div>
+
+<style>
+  .site-header {
+    --fg: var(--ink);
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 100;
+    height: var(--header-h);
+    color: var(--fg);
+    transition:
+      transform 0.7s var(--ease),
+      color 0.5s var(--ease),
+      background-color 0.5s var(--ease),
+      box-shadow 0.5s var(--ease);
+  }
+  .site-header[data-variant='overlay'] {
+    --fg: var(--paper);
+  }
+  .site-header.is-solid {
+    --fg: var(--ink);
+    background: rgb(250 249 247 / 0.94);
+    box-shadow: 0 1px 0 var(--line);
+  }
+  @supports (backdrop-filter: blur(1px)) {
+    .site-header.is-solid {
+      background: rgb(250 249 247 / 0.86);
+      backdrop-filter: saturate(1.2) blur(14px);
+      -webkit-backdrop-filter: saturate(1.2) blur(14px);
+    }
+  }
+  .site-header.is-hidden {
+    transform: translateY(-100%);
+  }
+  .site-header.menu-open {
+    --fg: var(--ink);
+    background: transparent;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .bar {
+    height: 100%;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 32px;
+  }
+
+  .brand {
+    justify-self: start;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: none;
+  }
+  .brand :global(.brand-mark) {
+    flex: none;
+    width: 42px;
+    height: auto;
+    color: var(--crimson);
+    transition: color 0.5s var(--ease);
+  }
+  .site-header[data-variant='overlay']:not(.is-solid):not(.menu-open) :global(.brand-mark) {
+    color: var(--paper);
+  }
+  .brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    white-space: nowrap;
+  }
+  .brand-top {
+    font-weight: 600;
+    letter-spacing: 0.14em;
+  }
+  .brand-bottom {
+    font-weight: 400;
+    opacity: 0.85;
+  }
+
+  .nav {
+    justify-self: center;
+  }
+  .nav ul {
+    display: flex;
+    gap: clamp(18px, 2.2vw, 36px);
+  }
+  .nav a,
+  .langs a {
+    position: relative;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    padding-block: 6px;
+  }
+  .nav a::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.6s var(--ease);
+  }
+  .nav a:hover::after,
+  .nav a[aria-current]::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+
+  .actions {
+    justify-self: end;
+    grid-column: 3;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+  .langs {
+    display: flex;
+    gap: 2px;
+  }
+  .langs a {
+    display: block;
+    padding: 6px 6px;
+    font-size: 0.8125rem;
+    letter-spacing: 0.1em;
+    opacity: 0.55;
+    transition: opacity 0.4s var(--ease);
+  }
+  .langs a:hover {
+    opacity: 1;
+  }
+  .langs a[aria-current='true'] {
+    opacity: 1;
+    box-shadow: inset 0 -1px 0 var(--crimson);
+  }
+  .book {
+    min-height: 46px;
+    padding: 0 22px;
+    font-size: 0.875rem;
+  }
+
+  .menu-toggle {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    height: 44px;
+    font-size: 0.8125rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .menu-lines {
+    position: relative;
+    width: 26px;
+    height: 8px;
+  }
+  .menu-lines i {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: currentColor;
+    transition: transform 0.6s var(--ease), top 0.6s var(--ease);
+  }
+  .menu-lines i:first-child {
+    top: 0;
+  }
+  .menu-lines i:last-child {
+    top: 7px;
+  }
+  .menu-open .menu-lines i:first-child {
+    top: 4px;
+    transform: rotate(18deg);
+  }
+  .menu-open .menu-lines i:last-child {
+    top: 4px;
+    transform: rotate(-18deg);
+  }
+
+  /* Mobile menu */
+  .mobile-menu {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    background: var(--paper);
+    padding-top: calc(var(--header-h) + 24px);
+    overflow-y: auto;
+    clip-path: inset(0 0 100% 0);
+    transition: clip-path 0.8s var(--ease-in-out);
+  }
+  .mobile-menu.is-open {
+    clip-path: inset(0 0 0 0);
+  }
+  .mm-inner {
+    min-height: calc(100svh - var(--header-h) - 24px);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding-bottom: 28px;
+  }
+  .mm-links li {
+    border-bottom: 1px solid var(--line);
+    overflow: hidden;
+  }
+  .mm-links a {
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+    padding: 14px 0 12px;
+  }
+  .mm-label {
+    font-size: clamp(1.625rem, 7vw, 2rem);
+    font-weight: 300;
+    letter-spacing: -0.015em;
+    line-height: 1.15;
+  }
+  .mm-foot {
+    display: grid;
+    gap: 22px;
+    padding-top: 36px;
+  }
+  .mm-contact {
+    display: grid;
+    gap: 10px;
+    font-size: 0.9375rem;
+  }
+  .mm-contact a {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .mm-contact :global(.icon) {
+    width: 20px;
+    height: 20px;
+    color: var(--crimson);
+  }
+  .mm-langs {
+    display: flex;
+    gap: 8px;
+  }
+  .mm-langs a {
+    display: block;
+    padding: 8px 10px;
+    font-size: 0.8125rem;
+    letter-spacing: 0.1em;
+    border: 1px solid var(--line);
+  }
+  .mm-langs a[aria-current='true'] {
+    border-color: var(--crimson);
+    color: var(--crimson);
+  }
+
+  @media (max-width: 1180px) {
+    .nav,
+    .langs,
+    .book {
+      display: none;
+    }
+    .menu-toggle {
+      display: inline-flex;
+    }
+  }
+  @media (max-width: 420px) {
+    .brand-text {
+      font-size: 0.625rem;
+    }
+    .brand :global(.brand-mark) {
+      width: 32px;
+    }
+    .menu-label {
+      display: none;
+    }
+  }
+</style>

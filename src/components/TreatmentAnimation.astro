@@ -1,0 +1,129 @@
+---
+/**
+ * A looping treatment animation (converted from the clinic's GIFs to MP4, see public/media/treatments/).
+ * The video only loads once it scrolls near the viewport and pauses when it leaves.
+ * With reduced motion it shows the poster frame and waits for the play button.
+ */
+import { useT, type Lang } from '../i18n';
+import type { Animation } from '../data/animations';
+
+interface Props { lang: Lang; id: string; animation: Animation; title: string }
+const { lang, id, animation, title } = Astro.props;
+const tp = useT(lang).treatmentPage;
+const base = `/media/treatments/${id}`;
+---
+
+<figure class="anim" data-anim>
+  <video
+    class="anim-video"
+    width={animation.width}
+    height={animation.height}
+    poster={`${base}.jpg`}
+    data-src={`${base}.mp4`}
+    muted
+    loop
+    playsinline
+    preload="none"
+    aria-label={`${tp.animation}: ${title}`}
+  ></video>
+  <button class="anim-toggle" type="button" aria-pressed="false" data-anim-toggle
+    data-pause-label={tp.pauseAnimation} data-play-label={tp.playAnimation} aria-label={tp.pauseAnimation}>
+    <svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.5v9M11 3.5v9" /></svg>
+    <svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.5l7 4.5-7 4.5z" /></svg>
+  </button>
+</figure>
+
+<script>
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelectorAll<HTMLElement>('[data-anim]').forEach((root) => {
+    const video = root.querySelector('video');
+    const toggle = root.querySelector<HTMLButtonElement>('[data-anim-toggle]');
+    if (!video || !toggle) return;
+    // Paused by the visitor (or by reduced motion) until they press play
+    let userPaused = reduced;
+    let inView = false;
+
+    const load = () => {
+      if (!video.src && video.dataset.src) video.src = video.dataset.src;
+    };
+    const sync = () => {
+      const paused = userPaused || !inView;
+      if (paused) video.pause();
+      else {
+        load();
+        video.play().catch(() => {});
+      }
+      toggle.setAttribute('aria-pressed', String(userPaused));
+      toggle.setAttribute('aria-label', (userPaused ? toggle.dataset.playLabel : toggle.dataset.pauseLabel) ?? '');
+      root.classList.toggle('is-paused', userPaused);
+    };
+
+    new IntersectionObserver(
+      ([entry]) => {
+        inView = entry.isIntersecting;
+        if (inView) load();
+        sync();
+      },
+      { rootMargin: '200px 0px' },
+    ).observe(root);
+
+    toggle.addEventListener('click', () => {
+      userPaused = !userPaused;
+      sync();
+    });
+    sync();
+  });
+</script>
+
+<style>
+  .anim {
+    position: relative;
+    background: #fff;
+    overflow: hidden;
+  }
+  .anim-video {
+    display: block;
+    width: 100%;
+    height: auto;
+    /* Tall animations stay within the screen while pinned; the white card fills the sides */
+    max-height: calc(100svh - var(--header-h) - var(--tbar-h, 120px) - 48px);
+    object-fit: contain;
+    background: #fff;
+  }
+  .anim-toggle {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 0.9);
+    color: var(--ink);
+    box-shadow: 0 0 0 1px var(--line);
+    transition: background-color 0.4s var(--ease), color 0.4s var(--ease);
+  }
+  .anim-toggle:hover {
+    background: var(--crimson);
+    color: #fff;
+  }
+  .anim-toggle svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+  }
+  .anim-toggle .i-play {
+    fill: currentColor;
+    stroke: none;
+  }
+  .anim .i-play,
+  .anim.is-paused .i-pause {
+    display: none;
+  }
+  .anim.is-paused .i-play {
+    display: block;
+  }
+</style>

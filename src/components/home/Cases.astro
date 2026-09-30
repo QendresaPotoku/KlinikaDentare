@@ -1,0 +1,584 @@
+---
+import { Image } from 'astro:assets';
+import Arrow from '../Arrow.astro';
+import Ph from '../Ph.astro';
+import { useT, type Lang } from '../../i18n';
+import { cases, type CropBox } from '../../data/cases';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useT(lang);
+const c = t.cases;
+
+// Until the clinic supplies consented photographs, one marked placeholder case keeps the layout and interaction reviewable.
+const pending = cases.length === 0;
+const items = pending ? [null] : cases;
+const total = String(items.length).padStart(2, '0');
+const pad = (i: number) => String(i + 1).padStart(2, '0');
+const isStatic = (item: (typeof cases)[number] | null) => !!item?.combined && !item.crop;
+const firstStatic = isStatic(items[0]);
+// Halves cropped from combined images use a fixed 3:2 frame at every size, so the crop boxes stay exact
+const crops = !pending && cases.every((item) => item.crop);
+const showNames = pending || cases.some((item) => item.treatment);
+
+// Photographs are only resized and compressed, never retouched. High quality keeps colour and detail faithful.
+const imgProps = {
+  widths: [640, 960, 1280, 1600, 2000],
+  sizes: '(max-width: 760px) 100vw, 86vw',
+  quality: 90,
+  draggable: 'false',
+} as const;
+
+/**
+ * One crop box of a combined image as CSS variables: the whole image is scaled so the box fills the
+ * 3:2 frame, then shifted so only the box shows. Percentages keep it exact at any frame size.
+ */
+const cropStyle = ([x, y, w]: CropBox, width: number) => {
+  const h = w / 1.5;
+  return `--w:${((width / w) * 100).toFixed(3)}%;--left:${((-x / w) * 100).toFixed(3)}%;--top:${((-y / h) * 100).toFixed(3)}%`;
+};
+---
+
+<section class="cases section on-dark" aria-labelledby="cases-title" data-cases>
+  <div class={`container layout grid${crops ? ' crops' : ''}`}>
+    <header class="head">
+      <p class="label label--light" data-reveal="fade">{c.label}</p>
+      <h2 id="cases-title" class="h2" data-split>{c.heading}</h2>
+      <p class="intro" data-reveal="fade">{c.intro}</p>
+
+      {!pending && items.length > 1 && (
+        <div class="thumbs" data-reveal="fade">
+          <p class="thumbs-label">{c.browse}</p>
+          <ul class="thumbs-list">
+            {cases.map((item, i) => (
+              <li>
+                <button
+                  type="button"
+                  class={`thumb${i === 0 ? ' is-active' : ''}`}
+                  data-case-thumb
+                  aria-label={`${c.caseLabel} ${pad(i)}`}
+                  aria-pressed={i === 0 ? 'true' : 'false'}
+                >
+                  {item.combined && item.crop ? (
+                    <Image src={item.combined} alt="" class="crop" style={cropStyle(item.crop.after, item.combined.width)} widths={[400, 800]} sizes="240px" draggable="false" />
+                  ) : (
+                    <Image src={(item.after ?? item.combined)!} alt="" widths={[240, 480]} sizes="120px" draggable="false" />
+                  )}
+                  <span class="thumb-num index-num">{pad(i)}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </header>
+
+    <div class={`stage${firstStatic ? ' is-static' : ''}`} data-compare>
+      {items.map((item, i) => {
+        const name = item?.treatment?.[lang] ?? `${c.caseLabel} ${pad(i)}`;
+        return (
+          <figure
+            class={`case${i === 0 ? ' is-active' : ''}${isStatic(item) ? ' is-combined' : ''}`}
+            data-case
+            data-kind={isStatic(item) ? 'combined' : 'compare'}
+            aria-hidden={i === 0 ? undefined : 'true'}
+          >
+            {item === null && (
+              <>
+                <div class="layer after pending-surface"><Ph text={c.pendingAfter} lang={lang} class="pending-text" /></div>
+                <div class="layer before pending-surface"><Ph text={c.pendingBefore} lang={lang} class="pending-text" /></div>
+              </>
+            )}
+            {item?.before && item.after && (
+              <>
+                <div class="layer after">
+                  <Image src={item.after} alt={`${name}: ${c.after}`} style={item.focus ? `object-position:${item.focus}` : undefined} {...imgProps} />
+                </div>
+                <div class="layer before">
+                  <Image src={item.before} alt={`${name}: ${c.before}`} style={item.focus ? `object-position:${item.focus}` : undefined} {...imgProps} />
+                </div>
+              </>
+            )}
+            {item?.combined && item.crop && (
+              <>
+                <div class="layer after">
+                  <Image src={item.combined} alt={`${name}: ${c.after}`} class="crop" style={cropStyle(item.crop.after, item.combined.width)} quality={90} draggable="false" />
+                </div>
+                <div class="layer before">
+                  <Image src={item.combined} alt={`${name}: ${c.before}`} class="crop" style={cropStyle(item.crop.before, item.combined.width)} quality={90} draggable="false" />
+                </div>
+              </>
+            )}
+            {isStatic(item) && item?.combined && (
+              <Image src={item.combined} alt={`${name}, ${c.combinedAlt}`} {...imgProps} />
+            )}
+            <span class="tag tag-before" aria-hidden="true">{c.before}</span>
+            <span class="tag tag-after" aria-hidden="true">{c.after}</span>
+          </figure>
+        );
+      })}
+
+      <div
+        class="handle"
+        role="slider"
+        tabindex="0"
+        aria-label={c.compare}
+        aria-orientation="horizontal"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="50"
+        aria-valuetext={`${c.before} 50%, ${c.after} 50%`}
+        data-compare-handle
+        data-before={c.before}
+        data-after={c.after}
+        hidden={firstStatic}
+      >
+        <span class="knob" aria-hidden="true">
+          <svg viewBox="0 0 20 10" fill="none"><path d="M5 1 1 5l4 4M15 1l4 4-4 4" stroke="currentColor" stroke-width="1.1" /></svg>
+        </span>
+      </div>
+
+      {pending && <span class="sample-tag frame-tag">{t.common.placeholder}</span>}
+    </div>
+
+    <div class="foot">
+      {showNames && (
+        <div class="names">
+          {items.map((item, i) => (
+            <p class={`name${i === 0 ? ' is-active' : ''}`} data-case-name aria-hidden={i === 0 ? undefined : 'true'}>
+              <span class="index-num">{pad(i)}</span>
+              {item ? <span>{item.treatment?.[lang]}</span> : <Ph text={c.pendingName} lang={lang} />}
+            </p>
+          ))}
+        </div>
+      )}
+
+      {items.length > 1 && (
+        <div class="nav">
+          <p class="index-num count" aria-live="polite"><span class="visually-hidden">{c.caseLabel} </span><span data-case-current>01</span> / {total}</p>
+          <button type="button" data-case-prev aria-label={c.prev}><Arrow class="arrow flip" /></button>
+          <button type="button" data-case-next aria-label={c.next}><Arrow /></button>
+        </div>
+      )}
+    </div>
+  </div>
+</section>
+
+<style>
+  .cases {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .head {
+    display: grid;
+    gap: 28px;
+    margin-bottom: clamp(32px, 4vw, 56px);
+  }
+  .head .h2 {
+    color: var(--paper);
+  }
+  .intro {
+    color: rgb(250 249 247 / 0.72);
+    max-width: 34em;
+  }
+
+  /* Every case as a small "after" photograph: an overview and a shortcut to each one */
+  .thumbs {
+    display: grid;
+    gap: 14px;
+    margin-top: 12px;
+  }
+  .thumbs-label {
+    font-size: var(--fs-label);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted-light);
+  }
+  .thumbs-list {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .thumb {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    overflow: hidden;
+    background: #0e0d0d;
+    opacity: 0.5;
+    transition: opacity 0.4s var(--ease);
+  }
+  .thumb::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 1px solid transparent;
+    transition: border-color 0.4s var(--ease);
+  }
+  .thumb:hover,
+  .thumb.is-active {
+    opacity: 1;
+  }
+  .thumb.is-active::after {
+    border-color: var(--crimson);
+  }
+  .thumb:focus-visible {
+    outline: 1.5px solid var(--crimson);
+    outline-offset: 3px;
+  }
+  .thumb :global(img) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+  }
+  .thumb :global(img.crop) {
+    inset: var(--top) auto auto var(--left);
+    width: var(--w);
+    max-width: none;
+    height: auto;
+    object-fit: fill;
+  }
+  .thumb-num {
+    position: absolute;
+    left: 8px;
+    bottom: 6px;
+    z-index: 1;
+    font-size: 0.6875rem;
+    color: var(--paper);
+    text-shadow: 0 1px 6px rgb(0 0 0 / 0.6);
+  }
+
+  /* Wide screens: heading and controls in a column beside the comparison,
+     which is capped in width so the photographs stay sharp */
+  .layout {
+    row-gap: 0;
+  }
+  .head,
+  .stage,
+  .foot {
+    grid-column: 1 / -1;
+  }
+  @media (min-width: 1025px) {
+    .layout {
+      grid-template-rows: auto 1fr;
+      align-items: start;
+    }
+    .head {
+      grid-column: 1 / span 4;
+      grid-row: 1;
+      margin-bottom: 0;
+    }
+    .stage {
+      grid-column: 5 / -1;
+      grid-row: 1 / span 2;
+      justify-self: end;
+    }
+    .foot {
+      grid-column: 1 / span 4;
+      grid-row: 2;
+      align-self: end;
+      width: auto;
+      margin: 32px 0 0;
+      grid-template-columns: 1fr;
+      padding-top: 24px;
+      border-top: 1px solid rgb(250 249 247 / 0.14);
+    }
+    .nav {
+      margin-left: -14px;
+    }
+    .count {
+      margin-left: 14px;
+    }
+  }
+
+  /* ---------- Comparison ---------- */
+  /* Both photographs of a case fill the same frame with the same cropping.
+     The before layer is clipped at the divider. */
+  .layout {
+    /* Never taller than the viewport, so the whole comparison is visible while dragging */
+    --stage-w: min(100%, calc((100svh - 180px) * 1.5));
+  }
+  .layout.crops {
+    /* The crops are 435 to 580 source pixels wide: limit the enlargement so they stay sharp */
+    --stage-w: min(100%, 920px, calc((100svh - 180px) * 1.5));
+  }
+  .stage {
+    --pos: 50%;
+    position: relative;
+    width: var(--stage-w);
+    margin-inline: auto;
+    aspect-ratio: 3 / 2;
+    overflow: hidden;
+    background: #0e0d0d;
+    cursor: ew-resize;
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .stage.is-static {
+    cursor: default;
+  }
+  .case {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.9s var(--ease),
+      visibility 0s linear 0.9s;
+  }
+  .case.is-active {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.9s var(--ease);
+  }
+  .layer {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+  .layer :global(img),
+  .case > :global(img) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+    -webkit-user-drag: none;
+  }
+  /* One crop box of a combined image: the whole image scaled and shifted so only the box shows */
+  .layer :global(img.crop) {
+    inset: var(--top) auto auto var(--left);
+    width: var(--w);
+    max-width: none;
+    height: auto;
+    object-fit: fill;
+  }
+  .before {
+    clip-path: inset(0 calc(100% - var(--pos)) 0 0);
+  }
+  /* A combined image without crop boxes: shown whole, never cropped */
+  .is-combined > :global(img) {
+    object-fit: contain;
+  }
+
+  /* Placeholder surfaces until real photographs are supplied */
+  .pending-surface.after {
+    background: #262322;
+  }
+  .pending-surface.before {
+    background: #1c1a19;
+  }
+  .pending-surface :global(.pending-text) {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: var(--fs-small);
+    color: rgb(250 249 247 / 0.7);
+    white-space: nowrap;
+  }
+  .pending-surface.before :global(.pending-text) {
+    left: 25%;
+  }
+  .pending-surface.after :global(.pending-text) {
+    left: 75%;
+  }
+
+  /* Side labels, fading when the divider passes over them */
+  .tag {
+    position: absolute;
+    top: clamp(14px, 1.6vw, 24px);
+    z-index: 2;
+    font-size: var(--fs-label);
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    line-height: 1;
+    color: rgb(250 249 247 / 0.9);
+    text-shadow: 0 1px 8px rgb(0 0 0 / 0.45);
+    pointer-events: none;
+    transition: opacity 0.4s var(--ease);
+  }
+  .tag-before {
+    left: clamp(14px, 1.6vw, 24px);
+  }
+  .tag-after {
+    right: clamp(14px, 1.6vw, 24px);
+  }
+  .stage:global(.hide-before) .tag-before,
+  .stage:global(.hide-after) .tag-after,
+  .is-combined .tag {
+    opacity: 0;
+  }
+
+  /* Divider: a hairline with a wide invisible hit area and a small knob */
+  .handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--pos);
+    z-index: 3;
+    width: 48px;
+    margin-left: -24px;
+    display: grid;
+    place-items: center;
+    outline: none;
+  }
+  .handle[hidden] {
+    display: none;
+  }
+  .handle::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+    background: rgb(250 249 247 / 0.9);
+    box-shadow: 0 0 6px rgb(0 0 0 / 0.25);
+  }
+  .knob {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgb(250 249 247 / 0.9);
+    border-radius: 50%;
+    background: rgb(23 23 23 / 0.4);
+    color: var(--paper);
+    transition:
+      transform 0.5s var(--ease),
+      background-color 0.4s var(--ease),
+      border-color 0.4s var(--ease);
+  }
+  .knob svg {
+    width: 18px;
+  }
+  .stage:global(.is-dragging) .knob {
+    background: var(--crimson);
+    border-color: var(--crimson);
+    transform: scale(0.92);
+  }
+  @media (hover: hover) {
+    .stage:not(.is-static):hover .knob {
+      background: var(--crimson);
+      border-color: var(--crimson);
+    }
+  }
+  .handle:focus-visible .knob {
+    outline: 1.5px solid var(--crimson);
+    outline-offset: 4px;
+  }
+
+  .frame-tag {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    z-index: 3;
+    color: var(--paper);
+    border-color: rgb(250 249 247 / 0.45);
+    pointer-events: none;
+  }
+
+  /* ---------- Caption row ---------- */
+  .foot {
+    width: var(--stage-w);
+    margin: 20px auto 0;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    gap: 14px 32px;
+  }
+  .names {
+    display: grid;
+  }
+  .name {
+    grid-area: 1 / 1;
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    font-size: 0.9375rem;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.6s var(--ease),
+      visibility 0s linear 0.6s;
+  }
+  .name.is-active {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.9s var(--ease) 0.15s;
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .count {
+    color: var(--paper);
+    margin-right: 14px;
+  }
+  .nav button {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    color: rgb(250 249 247 / 0.75);
+    transition: color 0.4s var(--ease);
+  }
+  .nav button:hover {
+    color: var(--crimson);
+  }
+  .nav :global(.arrow) {
+    width: 22px;
+    height: 10px;
+  }
+  .nav :global(.flip) {
+    transform: scaleX(-1);
+  }
+  @media (max-width: 1024px) {
+    .thumbs-list {
+      max-width: 560px;
+    }
+  }
+  @media (max-width: 760px) {
+    .thumbs-list {
+      gap: 6px;
+    }
+    .thumb-num {
+      display: none;
+    }
+    /* Full-bleed on phones: the photograph uses the whole width */
+    .stage {
+      width: auto;
+      margin-inline: calc(var(--gutter) * -1);
+      aspect-ratio: 4 / 3;
+    }
+    .crops .stage {
+      aspect-ratio: 3 / 2;
+    }
+    .foot {
+      width: auto;
+      margin-inline: 0;
+    }
+    .pending-surface :global(.pending-text) {
+      white-space: normal;
+      width: 40%;
+      text-align: center;
+      font-size: var(--fs-label);
+    }
+    .frame-tag {
+      display: none;
+    }
+  }
+</style>

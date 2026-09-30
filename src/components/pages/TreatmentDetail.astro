@@ -1,0 +1,605 @@
+---
+import { Image } from 'astro:assets';
+import TreatmentBar from '../TreatmentBar.astro';
+import Faq from '../Faq.astro';
+import ClosingCta from '../ClosingCta.astro';
+import Arrow from '../Arrow.astro';
+import Icon from '../Icon.astro';
+import Ph from '../Ph.astro';
+import ImplantExplainer from '../ImplantExplainer.astro';
+import TreatmentAnimation from '../TreatmentAnimation.astro';
+import { animations } from '../../data/animations';
+import { useT, paths, type Lang } from '../../i18n';
+import { links } from '../../config/site';
+import { treatments, subImage, subDetailImage, type Treatment, type SubTreatment } from '../../data/treatments';
+
+/** A category page (Dental implants) or, with `sub`, one of its sub-treatments (All-on-4). */
+interface Props { lang: Lang; treatment: Treatment; sub?: SubTreatment }
+const { lang, treatment, sub } = Astro.props;
+const t = useT(lang);
+const tp = t.treatmentPage;
+const cat = treatment.copy[lang];
+const c = sub ? sub.copy[lang] : cat;
+const image = sub ? subImage(treatment, sub) : treatment.image;
+const detailImage = sub ? subDetailImage(treatment, sub) : treatment.detailImage;
+
+const catHref = paths.treatment(lang, cat.slug);
+const subHref = (s: SubTreatment) => paths.subTreatment(lang, cat.slug, s.copy[lang].slug);
+const num = (s: SubTreatment) => String(treatment.children.indexOf(s) + 1).padStart(2, '0');
+
+// Sub-treatment page: list its siblings.
+const options = sub ? treatment.children.filter((s) => s !== sub) : treatment.children;
+
+// Next: the following sub-treatment in this category, otherwise the next category.
+const nextCategory = treatments[(treatments.indexOf(treatment) + 1) % treatments.length];
+const nextSub = sub ? treatment.children[treatment.children.indexOf(sub) + 1] : undefined;
+const next = nextSub
+  ? { name: nextSub.copy[lang].name, href: subHref(nextSub) }
+  : { name: nextCategory.copy[lang].name, href: paths.treatment(lang, nextCategory.copy[lang].slug) };
+
+const crumbs = [
+  { label: t.nav.treatments, href: paths.treatments(lang) },
+  { label: cat.name, href: catHref },
+  ...(sub ? [{ label: c.name, href: subHref(sub) }] : []),
+];
+
+// Sub-treatments with their own animation show it beside the steps; the implant explainer stays on the category page.
+const animation = sub ? animations[sub.id] : undefined;
+const showExplainer = treatment.id === 'implants' && !sub;
+
+// Clinic-supplied content wins; otherwise clearly marked placeholders are shown.
+const intro = c.intro ?? tp.pendingIntro;
+const body = c.body ?? tp.pendingBody;
+const steps = c.steps ?? tp.pendingSteps;
+const faq = c.faq ?? tp.pendingFaq;
+const [firstPara, ...morePara] = body;
+---
+
+<article>
+  <TreatmentBar lang={lang} treatment={treatment} sub={sub} />
+
+  <!-- Hero: everything about the treatment on the left, its photo on the right, all on the first screen -->
+  <header class="hero container">
+    <div class="grid">
+      <div class="hero-text">
+        <nav class="crumbs" aria-label="Breadcrumb" data-reveal="fade" data-immediate data-delay="0.1">
+          <ol>
+            {crumbs.map((cr) => <li><a href={cr.href}>{cr.label}</a></li>)}
+          </ol>
+        </nav>
+        <p class="label" data-reveal="fade" data-immediate data-delay="0.2">{sub ? cat.name : tp.eyebrow}</p>
+        <h1 class="hero-title" data-split data-immediate data-delay="0.3">{c.name}</h1>
+        <Ph as="p" class="lead hero-intro" text={intro} lang={lang} data-reveal="fade" data-immediate data-delay="0.7" />
+        <div class="head-ctas" data-reveal="fade" data-immediate data-delay="0.85">
+          <a class="btn btn--primary" href={links.tel} data-book>{t.common.book}<Arrow /></a>
+          <a class="btn btn--ghost" href={links.whatsapp} target="_blank" rel="noopener"><Icon name="whatsapp" />WhatsApp</a>
+        </div>
+      </div>
+      <figure class="hero-media media" data-reveal="mask">
+        <div data-parallax="6">
+          <Image src={image} alt="" widths={[600, 900, 1200, 1600]} sizes="(max-width: 900px) 100vw, 42vw" loading="eager" />
+        </div>
+      </figure>
+    </div>
+  </header>
+
+  <section class="about container" aria-labelledby="about-title">
+    <div class="grid">
+      <div class="about-body">
+        <h2 id="about-title" class="label" data-reveal="fade">{tp.about}</h2>
+        <p class="h3 about-lead" data-reveal="fade">{c.summary}</p>
+        <Ph as="p" class="lead" text={firstPara} lang={lang} data-reveal="fade" />
+        {morePara.length > 0 && (
+          <div class="more" data-more data-reveal="fade">
+            <div class="more-body" id="about-more" data-more-body>
+              {morePara.map((p) => <Ph as="p" class="lead" text={p} lang={lang} />)}
+            </div>
+            <button
+              class="link more-toggle"
+              type="button"
+              aria-controls="about-more"
+              aria-expanded="true"
+              data-more-toggle
+              data-more-label={t.common.readMore}
+              data-less-label={t.common.readLess}
+              hidden
+            >
+              <span data-more-text>{t.common.readLess}</span>
+              <span class="more-icon" aria-hidden="true"></span>
+            </button>
+          </div>
+        )}
+      </div>
+      <figure class="about-img media" data-reveal="mask">
+        <Image src={detailImage} alt="" widths={[500, 800, 1100]} sizes="(max-width: 900px) 100vw, 40vw" />
+      </figure>
+    </div>
+  </section>
+
+  {showExplainer && <ImplantExplainer lang={lang} />}
+
+  <section class="process section" aria-labelledby="process-title">
+    <div class="container">
+      <h2 id="process-title" class="h2" data-split>{tp.process}</h2>
+      <div class:list={['process-body', { 'has-anim': animation }]}>
+      {animation && sub && (
+        <div class="process-anim" data-reveal="fade">
+          <TreatmentAnimation lang={lang} id={sub.id} animation={animation} title={c.name} />
+        </div>
+      )}
+      <ol class="steps">
+        {steps.map((s, i) => (
+          <li data-reveal="fade">
+            <span class="rule" data-reveal="line" aria-hidden="true"></span>
+            <span class="num">{String(i + 1).padStart(2, '0')}</span>
+            <Ph as="h3" class="step-title" text={s.title} lang={lang} />
+            <Ph as="p" class="body" text={s.text} lang={lang} />
+          </li>
+        ))}
+      </ol>
+      </div>
+    </div>
+  </section>
+
+  <Faq lang={lang} id="treatment-faq" label={t.faq.label} heading={tp.faq} items={faq} />
+
+  {sub && options.length > 0 && (
+    <section class="options options--related container" aria-labelledby="related-title">
+      <div class="grid">
+        <div class="options-head">
+          <h2 id="related-title" class="label" data-reveal="fade">{tp.related}</h2>
+          <a class="options-cat" href={catHref} data-reveal="fade">{cat.name}<Arrow /></a>
+        </div>
+        <ol class="option-list">
+          {options.map((s) => (
+            <li data-reveal="fade">
+              <a class="option" href={subHref(s)}>
+                <span class="index-num">{num(s)}</span>
+                <span class="option-text">
+                  <span class="option-name">{s.copy[lang].name}</span>
+                  <span class="option-sum">{s.copy[lang].summary}</span>
+                </span>
+                <span class="option-go"><Arrow /></span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  )}
+
+  <ClosingCta lang={lang} heading={tp.consultHeading} text={tp.consultText} />
+
+  <a class="next" href={next.href}>
+    <span class="container next-inner">
+      <span class="label">{tp.next}</span>
+      <span class="next-name">{next.name}</span>
+      <span class="next-go"><Arrow /></span>
+    </span>
+  </a>
+</article>
+
+<style>
+  .head-ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  /* Hero */
+  .hero {
+    padding-top: clamp(28px, 3vw, 48px);
+  }
+  .hero .grid {
+    align-items: center;
+    row-gap: 36px;
+  }
+  .hero-text {
+    grid-column: 1 / span 6;
+    display: grid;
+    gap: 22px;
+    justify-items: start;
+  }
+  .crumbs {
+    margin-bottom: clamp(4px, 1vw, 16px);
+  }
+  .crumbs ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: var(--fs-small);
+    color: var(--muted);
+  }
+  .crumbs li + li::before {
+    content: '/';
+    margin-right: 10px;
+    color: var(--muted-light);
+  }
+  .crumbs a:hover {
+    color: var(--crimson);
+  }
+  .hero-title {
+    font-size: clamp(2.375rem, 4.6vw, 4.5rem);
+    font-weight: 300;
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+    max-width: 13em;
+  }
+  .hero-intro {
+    max-width: 30em;
+  }
+  .head-ctas {
+    margin-top: 6px;
+  }
+  .hero-media {
+    grid-column: 7 / span 6;
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    /* Fit the whole hero on the first screen, below the header and treatment bar */
+    max-height: calc(100svh - var(--header-h) - var(--tbar-h, 120px) - 72px);
+    min-height: 360px;
+  }
+
+  /* Sub-treatments of a category, or the siblings of a sub-treatment */
+  .options {
+    padding-top: var(--section-sm);
+  }
+  .options--related {
+    padding-top: 0;
+    padding-bottom: var(--section-sm);
+  }
+  .options .grid {
+    row-gap: 24px;
+    align-items: start;
+  }
+  .options-head {
+    grid-column: 1 / span 4;
+    display: grid;
+    gap: 20px;
+    justify-items: start;
+  }
+  .options-count {
+    font-size: var(--fs-display);
+    font-weight: 300;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--muted-light);
+    font-variant-numeric: tabular-nums;
+  }
+  .options-cat {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-size: var(--fs-h3);
+    font-weight: 400;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+    transition: color 0.5s var(--ease);
+  }
+  .options-cat :global(.arrow) {
+    width: 20px;
+    flex: none;
+    transition: transform 0.6s var(--ease);
+  }
+  .options-cat:hover {
+    color: var(--crimson);
+  }
+  .options-cat:hover :global(.arrow) {
+    transform: translateX(4px);
+  }
+  .option-list {
+    grid-column: 6 / -1;
+    border-top: 1px solid var(--ink);
+  }
+  .option {
+    display: grid;
+    grid-template-columns: 40px 1fr auto;
+    align-items: center;
+    gap: 16px;
+    padding-block: clamp(20px, 2vw, 28px);
+    border-bottom: 1px solid var(--line);
+  }
+  .option .index-num {
+    align-self: start;
+    padding-top: 0.7em;
+  }
+  .option-text {
+    display: grid;
+    gap: 6px;
+  }
+  .option-name {
+    font-size: clamp(1.3125rem, 1.9vw, 1.875rem);
+    font-weight: 400;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    transition: color 0.5s var(--ease);
+  }
+  .option-sum {
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+  .option-go {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    transition:
+      background-color 0.5s var(--ease),
+      border-color 0.5s var(--ease),
+      color 0.5s var(--ease);
+  }
+  .option-go :global(.arrow) {
+    width: 18px;
+  }
+  .option:hover .option-name,
+  .option:focus-visible .option-name {
+    color: var(--crimson);
+  }
+  .option:hover .option-go,
+  .option:focus-visible .option-go {
+    background: var(--crimson);
+    border-color: var(--crimson);
+    color: #fff;
+  }
+
+  /* Text and photo side by side, both starting on the same line */
+  .about {
+    padding-block: var(--section-sm);
+  }
+  .about .grid {
+    align-items: start;
+    row-gap: 32px;
+  }
+  .about-body {
+    grid-column: 7 / span 6;
+    grid-row: 1;
+    display: grid;
+    gap: 20px;
+    justify-items: start;
+  }
+  .about-lead {
+    font-weight: 400;
+  }
+  .about-img {
+    grid-column: 1 / span 5;
+    grid-row: 1;
+    aspect-ratio: 4 / 3;
+    /* Stays beside the text while a long description is read */
+    position: sticky;
+    top: calc(var(--header-h) + var(--tbar-h, 0px) + 24px);
+    transition: top 0.7s var(--ease);
+  }
+  :global(body:has(.site-header.is-hidden:not(.menu-open))) .about-img {
+    top: calc(var(--tbar-h, 0px) + 24px);
+  }
+
+  /* "Read more": the rest of the description, collapsed to a faded preview */
+  .more {
+    display: grid;
+    gap: 16px;
+    justify-items: start;
+  }
+  .more-body {
+    display: grid;
+    gap: 20px;
+    overflow: hidden;
+  }
+  .more.is-collapsed .more-body {
+    height: 4.8em;
+    -webkit-mask-image: linear-gradient(#000 10%, transparent);
+    mask-image: linear-gradient(#000 10%, transparent);
+  }
+  .more-icon {
+    position: relative;
+    width: 11px;
+    height: 11px;
+  }
+  .more-icon::before,
+  .more-icon::after {
+    content: '';
+    position: absolute;
+    inset: 5px 0 auto;
+    height: 1px;
+    background: currentColor;
+    transition: transform 0.5s var(--ease);
+  }
+  .more-icon::after {
+    transform: rotate(90deg);
+  }
+  .more-toggle[aria-expanded='true'] .more-icon::after {
+    transform: rotate(0deg);
+  }
+  .more-toggle:hover {
+    color: var(--crimson);
+  }
+  /* The explainer follows straight on from the about section */
+  .about + :global(.explainer) {
+    padding-top: 0;
+    padding-bottom: var(--section-sm);
+  }
+
+  .process {
+    background: var(--stone);
+    padding-block: var(--section-sm);
+  }
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--col-gap);
+    margin-top: clamp(28px, 3vw, 48px);
+  }
+  .steps li {
+    display: grid;
+    gap: 16px;
+    align-content: start;
+    padding-top: 28px;
+    position: relative;
+  }
+  .rule {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--ink);
+  }
+  .num {
+    font-size: clamp(1.75rem, 2.4vw, 2.25rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--crimson);
+    font-weight: 400;
+  }
+  .step-title {
+    font-size: clamp(1.1875rem, 1.4vw, 1.375rem);
+    font-weight: 400;
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+  }
+
+  /* With an animation: the animation stays in view on the left while the steps are read on the right */
+  .has-anim {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--col-gap);
+    row-gap: 32px;
+    align-items: start;
+    margin-top: clamp(28px, 3vw, 48px);
+  }
+  .process-anim {
+    grid-column: 1 / span 6;
+    position: sticky;
+    top: calc(var(--header-h) + var(--tbar-h, 0px) + 24px);
+    transition: top 0.7s var(--ease);
+  }
+  :global(body:has(.site-header.is-hidden:not(.menu-open))) .process-anim {
+    top: calc(var(--tbar-h, 0px) + 24px);
+  }
+  .has-anim .steps {
+    grid-column: 8 / span 5;
+    grid-template-columns: 1fr;
+    row-gap: 28px;
+    margin-top: 0;
+  }
+  .has-anim .steps li {
+    grid-template-columns: 52px 1fr;
+    column-gap: 12px;
+    row-gap: 8px;
+    padding-top: 22px;
+  }
+  .has-anim .num {
+    grid-row: span 2;
+    font-size: clamp(1.375rem, 1.8vw, 1.75rem);
+  }
+
+  .next {
+    display: block;
+    background: var(--paper);
+    border-top: 1px solid var(--line);
+  }
+  .next-inner {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 16px 32px;
+    padding-block: clamp(32px, 3.5vw, 56px);
+  }
+  .next .label {
+    grid-column: 1 / -1;
+  }
+  .next-name {
+    font-size: var(--fs-h2);
+    font-weight: 300;
+    line-height: 1.1;
+    letter-spacing: -0.028em;
+    transition: color 0.6s var(--ease), transform 0.9s var(--ease);
+  }
+  .next-go {
+    width: clamp(56px, 5vw, 80px);
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    transition: background-color 0.6s var(--ease), color 0.6s var(--ease), border-color 0.6s var(--ease);
+  }
+  .next-go :global(.arrow) {
+    width: 42%;
+    height: auto;
+    transition: transform 0.6s var(--ease);
+  }
+  .next:hover .next-go :global(.arrow) {
+    transform: translateX(4px);
+  }
+  .next:hover .next-name {
+    color: var(--crimson);
+    transform: translateX(12px);
+  }
+  .next:hover .next-go {
+    background: var(--crimson);
+    border-color: var(--crimson);
+    color: #fff;
+  }
+
+  @media (max-width: 900px) {
+    .options-head,
+    .option-list {
+      grid-column: 1 / -1;
+    }
+    .options-count {
+      display: none;
+    }
+    .option {
+      grid-template-columns: 24px 1fr auto;
+      gap: 14px;
+    }
+    .option-go {
+      width: 40px;
+      height: 40px;
+    }
+    .about-body,
+    .about-img,
+    .hero-text,
+    .hero-media {
+      grid-column: 1 / -1;
+    }
+    .about-img {
+      grid-row: auto;
+    }
+    .hero-media {
+      aspect-ratio: 4 / 3;
+      max-height: none;
+      min-height: 0;
+    }
+  }
+  @media (max-width: 600px) {
+    /* The title already names the current page, so the last crumb is dropped to keep one line */
+    .crumbs li:last-child {
+      display: none;
+    }
+    .head-ctas {
+      width: 100%;
+    }
+    .head-ctas .btn {
+      flex: 1 1 auto;
+    }
+    .about-img {
+      position: static;
+      aspect-ratio: 16 / 10;
+    }
+    .steps {
+      grid-template-columns: 1fr;
+      row-gap: 48px;
+    }
+    .process-anim,
+    .has-anim .steps {
+      grid-column: 1 / -1;
+    }
+    .process-anim {
+      position: static;
+    }
+  }
+</style>

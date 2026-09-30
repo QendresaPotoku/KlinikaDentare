@@ -1,0 +1,332 @@
+/**
+ * Albanian copy. Text in [[double brackets]] is a placeholder that the clinic still has to supply.
+ * Do not use em dashes in site copy.
+ */
+const sq = {
+  meta: {
+    homeTitle: 'Klinika Dentare Dr. Petriti & Dr. Vlera · Prishtinë',
+    homeDescription:
+      'Klinika Dentare Dr. Petriti & Dr. Vlera në Prishtinë. Implante dentare, protetikë, kirurgji orale dhe estetikë dentare. Rezervoni termin me telefon, WhatsApp ose Viber.',
+  },
+  common: {
+    placeholder: "Për t'u plotësuar nga klinika",
+    sample: 'Tekst shembull',
+    book: 'Rezervo termin',
+    call: 'Telefononi',
+    whatsapp: 'WhatsApp',
+    viber: 'Viber',
+    readMore: 'Lexo më shumë',
+    readLess: 'Më pak',
+    skip: 'Kalo te përmbajtja',
+    closed: 'Mbyllur',
+  },
+  booking: {
+    title: 'Rezervoni një termin',
+    intro: 'Plotësoni formularin dhe ju kontaktojmë për të konfirmuar terminin.',
+    name: 'Emri dhe mbiemri',
+    phone: 'Telefoni',
+    email: 'Email-i',
+    optional: 'opsionale',
+    treatment: 'Trajtimi',
+    treatmentAny: 'Nuk jam i sigurt / konsultë',
+    date: 'Data e preferuar',
+    time: 'Koha e preferuar',
+    times: { morning: 'Paradite', afternoon: 'Pasdite', any: 'Çdo kohë' },
+    message: 'Mesazhi',
+    submit: 'Dërgo kërkesën',
+    close: 'Mbyll',
+    successTitle: 'Faleminderit!',
+    successText: 'Kërkesa juaj u pranua. Do t’ju kontaktojmë së shpejti për të konfirmuar terminin.',
+    done: 'Në rregull',
+  },
+  nav: {
+    treatments: 'Trajtimet',
+    clinic: 'Klinika',
+    doctors: 'Ekipi',
+    gallery: 'Galeria',
+    diaspora: 'Turizmi Dentar',
+    contact: 'Kontakti',
+    menu: 'Menu',
+    close: 'Mbyll',
+    language: 'Gjuha',
+  },
+  hero: {
+    eyebrow: 'Klinika Dentare',
+    headline: 'Buzëqeshni me gjithë zemër.',
+    sub: "Implantologji, protetikë dhe stomatologji estetike nga Dr. Petriti & Dr. Vlera, që gjejnë kohë t'ju shpjegojnë çdo hap.",
+    cta1: 'Rezervo termin',
+    location: 'Prishtinë, Kosovë',
+  },
+  intro: {
+    label: 'Klinika',
+    statement:
+      'Një vizitë te dentisti nuk duhet të ndihet e nxituar. Këtu, çdo trajtim fillon me një bisedë.',
+    text1:
+      'Klinika Dentare Dr. Petriti & Dr. Vlera, me lokacion në Prishtinë, ofron trajtime në implantologji, protetikë, kirurgji orale dhe estetikë dentare.',
+    text2:
+      '[[Një paragraf i shkurtër për historinë dhe filozofinë e klinikës, i cili do të dërgohet nga klinika.]]',
+    link: 'Njihuni me mjekët',
+  },
+  treatments: {
+    label: 'Trajtimet',
+    heading: 'Trajtime të zgjedhura',
+    all: 'Të gjitha trajtimet',
+    view: 'Shiko trajtimin',
+  },
+  approach: {
+    label: 'Qasja',
+    statement: 'Qetësi, saktësi dhe shpjegim i qartë në çdo hap.',
+    steps: [
+      {
+        title: 'Biseda',
+        text: 'Fillojmë duke dëgjuar. Ju tregoni çfarë ju shqetëson dhe çfarë prisni nga trajtimi.',
+      },
+      {
+        title: 'Plani',
+        text: 'Para se të fillojmë, ju shpjegojmë opsionet dhe hapat, që vendimi të merret me informacion të plotë.',
+      },
+      {
+        title: 'Trajtimi',
+        text: 'Puna kryhet me kujdes dhe në ritmin tuaj, me kohë për çdo pyetje që mund të lindë gjatë rrugës.',
+      },
+    ],
+  },
+  doctors: {
+    label: 'Mjekët',
+    heading: 'Dy mjekë, një mënyrë pune.',
+    cta: 'Njihuni me ekipin',
+    specialization: 'Specializimi',
+    experience: 'Përvoja',
+    education: 'Formimi',
+    people: [
+      {
+        name: 'Dr. Petriti',
+        role: '[[Specializimi i mjekut]]',
+        bio: '[[Biografia e shkurtër e Dr. Petritit do të shtohet pasi klinika të dërgojë CV-në.]]',
+        experience: '[[Vitet e përvojës dhe fushat kryesore të punës]]',
+        education: '[[Universiteti, specializimet dhe trajnimet]]',
+      },
+      {
+        name: 'Dr. Vlera',
+        role: '[[Specializimi i mjekes]]',
+        bio: '[[Biografia e shkurtër e Dr. Vlerës do të shtohet pasi klinika të dërgojë CV-në.]]',
+        experience: '[[Vitet e përvojës dhe fushat kryesore të punës]]',
+        education: '[[Universiteti, specializimet dhe trajnimet]]',
+      },
+    ],
+  },
+  video: {
+    label: 'Video',
+    heading: 'Një vështrim brenda klinikës',
+    description: 'Para vizitës së parë, shihni ku do të trajtoheni: dhomat, pajisjet dhe njerëzit që do të kujdesen për ju.',
+    points: ['Recepsioni dhe zona e pritjes', 'Dhomat e trajtimit', 'Skanimi dhe planifikimi digjital', 'Ekipi në punë'],
+    play: 'Luaj videon',
+    pending: 'Video prezantuese e klinikës do të vendoset këtu.',
+  },
+  testimonials: {
+    label: 'Përvojat e pacientëve',
+    prev: 'Vlerësimi i mëparshëm',
+    next: 'Vlerësimi i radhës',
+  },
+  cases: {
+    label: 'Raste klinike · Para & pas',
+    heading: 'Rezultate nga puna jonë',
+    intro: 'Fotografi reale të pacientëve tanë, pa retushim. Tërhiqni vijën ndarëse për të krahasuar gjendjen para dhe pas trajtimit.',
+    before: 'Para',
+    after: 'Pas',
+    compare: 'Krahasimi para dhe pas',
+    prev: 'Rasti i mëparshëm',
+    next: 'Rasti i radhës',
+    pendingBefore: '[[Foto para trajtimit]]',
+    pendingAfter: '[[Foto pas trajtimit]]',
+    pendingName: '[[Emri i trajtimit]]',
+    caseLabel: 'Rasti',
+    browse: 'Të gjitha rastet',
+    combinedAlt: 'para trajtimit lart, pas trajtimit poshtë',
+  },
+  gallery: {
+    label: 'Galeria',
+    heading: 'Ambienti dhe ekipi',
+    all: 'Shiko galerinë',
+    categories: {
+      interior: 'Ambienti',
+      team: 'Ekipi',
+      treatment: 'Trajtimi',
+      cases: 'Rastet',
+    },
+    pageTitle: 'Galeria',
+    pageIntro: 'Fotografi nga klinika, ekipi, ambienti i trajtimit dhe raste të miratuara nga pacientët.',
+    filterAll: 'Të gjitha',
+    open: 'Hap foton',
+    prev: 'Fotoja e mëparshme',
+    next: 'Fotoja tjetër',
+  },
+  diaspora: {
+    label: 'Turizmi Dentar',
+    heading: 'Kudo që jeni, trajtimi juaj planifikohet para se të arrini.',
+    text: 'Për pacientët që vijnë në Kosovë gjatë pushimeve ose vizitave familjare, kontakti i parë mund të bëhet nga larg. Na shkruani dhe e planifikojmë vizitën në klinikë bashkë.',
+    points: [
+      { title: 'Kontakti i parë', text: 'Na shkruani në WhatsApp ose Viber, nga kudo që jeni.' },
+      { title: 'Plani i trajtimit', text: '[[Si përgatitet plani para mbërritjes, sipas praktikës së klinikës.]]' },
+      { title: 'Qëndrimi në Prishtinë', text: '[[Kohëzgjatja e përafërt e qëndrimit dhe informacion praktik.]]' },
+    ],
+    cta: 'Informacion për turizmin dentar',
+  },
+  diasporaPage: {
+    title: 'Turizmi dentar në Prishtinë',
+    description:
+      'Informacion për pacientët nga Gjermania, Zvicra, Austria dhe vende të tjera: trajtimet, planifikimi i qëndrimit dhe konsulta me Klinikën Dentare Dr. Petriti & Dr. Vlera.',
+    eyebrow: 'Turizmi dentar',
+    heading: 'Trajtimi juaj në Prishtinë, i planifikuar që nga shtëpia.',
+    intro:
+      'Shumë pacientë e kombinojnë trajtimin dentar me vizitën në Kosovë. Kjo faqe shpjegon si ta planifikoni, nga mesazhi i parë deri në kontrollin e fundit.',
+    stepsLabel: 'Hap pas hapi',
+    stepsHeading: 'Si funksionon',
+    steps: [
+      {
+        title: 'Na shkruani',
+        text: 'Na kontaktoni me WhatsApp, Viber ose telefon. [[Çfarë informacioni ose fotosh kërkon klinika në kontaktin e parë.]]',
+      },
+      { title: 'Konsulta', text: '[[Si zhvillohet konsulta e parë, në distancë ose në klinikë.]]' },
+      { title: 'Plani dhe kohëzgjatja', text: '[[Si përcaktohet plani i trajtimit dhe sa ditë rekomandohet të planifikohen.]]' },
+      { title: 'Trajtimi dhe kontrolli', text: '[[Si organizohen seancat dhe kontrolli pas trajtimit.]]' },
+    ],
+    stayLabel: 'Qëndrimi',
+    stayHeading: 'Planifikimi i qëndrimit',
+    stayText:
+      'Informacioni praktik për qëndrimin do të plotësohet nga klinika. Këtu mund të përfshihen këshilla për kohën e përshtatshme të vizitës dhe organizimin e ditëve.',
+    stayItems: [
+      { title: 'Koha e vizitës', text: '[[Rekomandime për periudhën dhe numrin e ditëve.]]' },
+      { title: 'Akomodimi', text: '[[Informacion për akomodimin, nëse klinika ofron ndihmë.]]' },
+      { title: 'Transporti', text: '[[Informacion për transportin nga aeroporti, nëse ofrohet.]]' },
+    ],
+    treatmentsLabel: 'Trajtimet',
+    treatmentsHeading: 'Trajtimet që mund të planifikoni',
+    contactHeading: 'Filloni me një mesazh.',
+    contactText: 'Na shkruani nga Gjermania, Zvicra, Austria ose kudo që jeni. Ju përgjigjemi dhe e planifikojmë vizitën bashkë.',
+  },
+  faq: {
+    label: 'Pyetje',
+    heading: 'Pyetje të shpeshta',
+    help: 'Nuk e gjeni përgjigjen? Na kontaktoni direkt.',
+    items: [
+      {
+        q: 'Si mund të rezervoj një termin?',
+        a: 'Mund të na telefononi ose të na shkruani në WhatsApp apo Viber. Numrat gjenden në fund të kësaj faqeje dhe në shiritin e kontaktit në telefon.',
+      },
+      {
+        q: 'A mund të konsultohem para se të vij nga jashtë?',
+        a: '[[Përgjigjja do të plotësohet nga klinika.]]',
+      },
+      { q: 'Sa zgjat trajtimi me implante dentare?', a: '[[Përgjigjja do të plotësohet nga klinika.]]' },
+      { q: 'Çfarë duhet të sjell në vizitën e parë?', a: '[[Përgjigjja do të plotësohet nga klinika.]]' },
+      { q: 'Cilat mënyra pagese pranohen?', a: '[[Përgjigjja do të plotësohet nga klinika.]]' },
+    ],
+  },
+  contact: {
+    label: 'Kontakti',
+    heading: 'Na gjeni në Prishtinë',
+    address: 'Adresa',
+    phone: 'Telefoni',
+    email: 'Email',
+    hours: 'Orari',
+    days: { weekdays: 'E hënë – E premte', saturday: 'E shtunë', sunday: 'E diel' },
+    mapTitle: 'Harta e vendndodhjes së klinikës',
+    write: 'Na shkruani',
+    directions: 'Merrni udhëzimet',
+  },
+  cta: {
+    heading: 'Buzëqeshja juaj fillon me një bisedë.',
+    text: 'Rezervoni një konsultë dhe flasim për atë që ju nevojitet.',
+  },
+  team: {
+    label: 'Ekipi',
+    title: 'Ekipi i klinikës',
+    intro: 'Njerëzit që ju presin në klinikë. Klikoni mbi secilin për të lexuar më shumë.',
+    groups: { doctors: 'Mjekët', staff: 'Ekipi' },
+    openProfile: 'Hap profilin e',
+    close: 'Mbyll',
+    cvLabel: 'Formimi dhe përvoja',
+    cvPending: [
+      '[[Viti: diploma dhe universiteti]]',
+      '[[Viti: specializimi]]',
+      '[[Viti: përvoja profesionale]]',
+    ],
+    staff: [
+      { name: '[[Emri Mbiemri]]', role: '[[Roli në klinikë]]', bio: '[[Përshkrim i shkurtër, i dërguar nga klinika.]]' },
+      { name: '[[Emri Mbiemri]]', role: '[[Roli në klinikë]]', bio: '[[Përshkrim i shkurtër, i dërguar nga klinika.]]' },
+    ],
+    book: 'Rezervo termin',
+  },
+  footer: {
+    rights: 'Të gjitha të drejtat e rezervuara.',
+    explore: 'Faqet',
+    contact: 'Kontakti',
+    top: 'Në fillim',
+  },
+  treatmentPage: {
+    eyebrow: 'Trajtim',
+    about: 'Rreth trajtimit',
+    process: 'Si zhvillohet',
+    faq: 'Pyetje për këtë trajtim',
+    next: 'Trajtimi i radhës',
+    back: 'Të gjitha trajtimet',
+    overview: 'Përmbledhje',
+    options: 'Opsionet e trajtimit',
+    related: 'Në të njëjtën kategori',
+    barLabel: 'Trajtimet',
+    animation: 'Animacion',
+    pauseAnimation: 'Ndalo animacionin',
+    playAnimation: 'Luaj animacionin',
+    consultHeading: 'Keni pyetje për këtë trajtim?',
+    consultText: 'Një konsultë është mënyra më e mirë për të kuptuar nëse ky trajtim është i përshtatshëm për ju.',
+    pendingIntro: '[[Hyrje e shkurtër për trajtimin, e shkruar ose e miratuar nga klinika.]]',
+    pendingBody: [
+      '[[Përshkrimi i trajtimit: për kë është i përshtatshëm dhe çfarë përfshin. Teksti do të sigurohet nga klinika.]]',
+      '[[Informacion shtesë për përgatitjen, kohëzgjatjen dhe kujdesin pas trajtimit.]]',
+    ],
+    pendingSteps: [
+      { title: 'Konsulta', text: '[[Përshkrimi i hapit të parë.]]' },
+      { title: '[[Hapi i dytë]]', text: '[[Përshkrimi i hapit.]]' },
+      { title: '[[Hapi i tretë]]', text: '[[Përshkrimi i hapit.]]' },
+    ],
+    pendingFaq: [
+      { q: '[[Pyetje e shpeshtë për këtë trajtim]]', a: '[[Përgjigjja nga klinika.]]' },
+      { q: '[[Pyetje e shpeshtë për këtë trajtim]]', a: '[[Përgjigjja nga klinika.]]' },
+    ],
+    indexTitle: 'Trajtimet',
+    indexIntro:
+      'Trajtimet dentare në Klinikën Dr. Petriti & Dr. Vlera. Zgjidhni një trajtim për të lexuar më shumë ose për të rezervuar konsultë.',
+  },
+  implantExplainer: {
+    label: 'Shpjegim',
+    title: 'Si funksionon implanti dentar',
+    intro:
+      'Implanti zëvendëson rrënjën e dhëmbit që mungon. Një kunj i vogël titani vendoset në kockën e nofullës, kocka rritet rreth tij dhe mbi të fiksohet një kurorë. Rezultati është një dhëmb që duket, ndihet dhe funksionon si i natyrshëm.',
+    steps: [
+      {
+        title: 'Implanti',
+        text: 'Një vidë e vogël titani vendoset në kockën e nofullës, aty ku mungon dhëmbi. Ajo zë vendin e rrënjës natyrale.',
+      },
+      {
+        title: 'Shërimi',
+        text: 'Gjatë muajve në vijim kocka rritet rreth implantit dhe lidhet me të (osteointegrimi), duke e fiksuar fort.',
+      },
+      {
+        title: 'Lidhësi (abatmenti)',
+        text: 'Mbi implant vendoset një lidhës i vogël, i cili del pak mbi mishin e dhëmbëve dhe mban dhëmbin e ri.',
+      },
+      {
+        title: 'Kurora ose ura',
+        text: 'Mbi lidhës fiksohet një kurorë ose, kur mungojnë shumë dhëmbë, një urë e plotë mbi disa implante. Punohet posaçërisht për ju, sipas formës dhe ngjyrës së dhëmbëve tuaj.',
+      },
+    ],
+    figureLabel:
+      'Animacion: katër implante titani në nofullën e poshtme, mbi të cilat vendosen lidhësit dhe një urë e plotë dhëmbësh.',
+    pause: 'Ndalo animacionin',
+    play: 'Luaj animacionin',
+    note: 'Informacion i përgjithshëm. Dentisti juaj ju shpjegon çfarë vlen për rastin tuaj.',
+  },
+};
+
+export default sq;

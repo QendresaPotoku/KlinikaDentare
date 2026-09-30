@@ -1,0 +1,206 @@
+---
+import Arrow from '../Arrow.astro';
+import { useT, type Lang } from '../../i18n';
+import { testimonialsFor } from '../../data/testimonials';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useT(lang);
+const items = testimonialsFor(lang);
+const locale = { sq: 'sq-AL', en: 'en-GB', de: 'de-DE' }[lang];
+const formatDate = (iso: string) =>
+  new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso));
+const total = String(items.length).padStart(2, '0');
+---
+
+<section class="testimonials section" aria-labelledby="testimonials-title" data-testimonials>
+  <div class="container grid">
+    <h2 id="testimonials-title" class="label t-label" data-reveal="fade">{t.testimonials.label}</h2>
+      <div class="controls" data-reveal="fade">
+        <p class="count index-num"><span data-current>01</span> / {total}</p>
+        <span class="track" aria-hidden="true"><span class="bar" data-progress style={`transform:scaleX(${1 / items.length})`}></span></span>
+        <div class="buttons">
+          <button type="button" data-prev aria-label={t.testimonials.prev}><Arrow class="arrow flip" /></button>
+          <button type="button" data-next aria-label={t.testimonials.next}><Arrow /></button>
+        </div>
+      </div>
+
+    <div class="stage" data-reveal="fade" data-stage>
+      {items.map((item, i) => (
+        <figure class={`slide${i === 0 ? ' is-active' : ''}`} data-slide aria-hidden={i === 0 ? undefined : 'true'}>
+          <blockquote lang={item.lang} class={item.text.length > 240 ? 'is-long' : undefined}>
+            <p>{item.text}</p>
+          </blockquote>
+          <figcaption>
+            <span class="author">{item.author}</span>
+            <span class="sep" aria-hidden="true"></span>
+            <span class="ctx"><time datetime={item.date}>{formatDate(item.date)}</time></span>
+          </figcaption>
+        </figure>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .testimonials {
+    background: var(--blush);
+  }
+  .t-label {
+    grid-column: 1 / span 3;
+    grid-row: 1;
+    align-self: start;
+    padding-top: 1em;
+  }
+  /* Controls sit right under the label so they never move while the quote changes height */
+  .controls {
+    grid-column: 1 / span 3;
+    grid-row: 2;
+    align-self: start;
+    display: grid;
+    gap: 18px;
+    margin-top: 32px;
+  }
+  .count {
+    color: var(--ink);
+  }
+  .track {
+    display: block;
+    width: 100%;
+    max-width: 180px;
+    height: 2px;
+    background: rgb(23 23 23 / 0.12);
+    overflow: hidden;
+  }
+  .bar {
+    display: block;
+    height: 100%;
+    background: var(--crimson);
+    transform-origin: left;
+    transition: transform 1s var(--ease);
+  }
+  .buttons {
+    display: flex;
+    gap: 10px;
+  }
+  .buttons button {
+    width: 52px;
+    height: 52px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgb(23 23 23 / 0.2);
+    border-radius: 50%;
+    transition:
+      background-color 0.5s var(--ease),
+      color 0.5s var(--ease),
+      border-color 0.5s var(--ease);
+  }
+  .buttons button:hover {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+  }
+  .buttons :global(.arrow) {
+    width: 18px;
+  }
+  .buttons :global(.flip) {
+    transform: scaleX(-1);
+  }
+
+  /* The stage is as tall as the current quote (height is animated between slides in main.ts) */
+  .stage {
+    grid-column: 5 / span 8;
+    grid-row: 1 / span 3;
+    position: relative;
+    display: grid;
+    min-height: 13rem;
+    overflow: hidden;
+    touch-action: pan-y;
+  }
+  .slide {
+    display: grid;
+    gap: 28px;
+    align-content: center;
+    justify-items: start;
+    visibility: hidden;
+    opacity: 0;
+  }
+  .slide:not(:global(.is-active)) {
+    position: absolute;
+    inset: 0 0 auto 0;
+  }
+  .slide:global(.is-active) {
+    visibility: visible;
+    opacity: 1;
+  }
+  blockquote {
+    padding-left: 0.5em;
+  }
+  blockquote p {
+    position: relative;
+    font-size: clamp(1.5rem, 2.3vw, 2.125rem);
+    line-height: 1.35;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    max-width: 26em;
+    text-wrap: balance;
+  }
+  /* Longer recommendations are set smaller so every slide keeps a calm measure */
+  blockquote.is-long p {
+    font-size: clamp(1.1875rem, 1.55vw, 1.5rem);
+    line-height: 1.45;
+    max-width: 34em;
+  }
+  /* Opening mark hangs in the margin so every line starts on the same edge */
+  blockquote p::before {
+    content: '\201C';
+    position: absolute;
+    right: 100%;
+    color: var(--crimson);
+  }
+  blockquote p::after {
+    content: '\201D';
+    color: var(--crimson);
+  }
+  figcaption {
+    flex-wrap: wrap;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 0.9375rem;
+  }
+  .sep {
+    width: 24px;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.4;
+  }
+  .author {
+    font-weight: 500;
+  }
+  figcaption .ctx {
+    color: var(--muted);
+  }
+
+  @media (max-width: 1024px) {
+    .t-label,
+    .controls,
+    .stage {
+      grid-column: 1 / -1;
+      grid-row: auto;
+    }
+    .stage {
+      margin-top: 32px;
+      min-height: 0;
+    }
+    .controls {
+      margin-top: 28px;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 24px;
+    }
+    .track {
+      max-width: none;
+    }
+  }
+</style>

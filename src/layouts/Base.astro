@@ -1,0 +1,64 @@
+---
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import MobileBar from '../components/MobileBar.astro';
+import BookingModal from '../components/BookingModal.astro';
+import { languages, htmlLang, useT, defaultLang, type Lang, type Alternates } from '../i18n';
+import { site } from '../config/site';
+
+interface Props {
+  lang: Lang;
+  title: string;
+  description: string;
+  alternates: Alternates;
+  headerVariant?: 'overlay' | 'light';
+}
+const { lang, title, description, alternates, headerVariant = 'light' } = Astro.props;
+const t = useT(lang);
+const canonical = new URL(alternates[lang], Astro.site);
+// Homepages point x-default at the root, which picks the visitor's language; other pages fall back to Albanian.
+const isHome = alternates[lang] === `/${lang}/`;
+const xDefault = new URL(isHome ? '/' : alternates[defaultLang], Astro.site);
+---
+
+<!doctype html>
+<html lang={htmlLang[lang]} id="top">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {languages.map((l) => <link rel="alternate" hreflang={l} href={new URL(alternates[l], Astro.site)} />)}
+    <link rel="alternate" hreflang="x-default" href={xDefault} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:url" content={canonical} />
+    <meta name="theme-color" content="#faf9f7" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+    <script is:inline>
+      // Enable reveal states only when JS runs and the visitor has not asked for reduced motion.
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.documentElement.classList.add('motion');
+      }
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">{t.common.skip}</a>
+    <Header lang={lang} alternates={alternates} variant={headerVariant} />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer lang={lang} />
+    <MobileBar lang={lang} />
+    <BookingModal lang={lang} />
+
+    <script>
+      import '../scripts/main';
+    </script>
+  </body>
+</html>

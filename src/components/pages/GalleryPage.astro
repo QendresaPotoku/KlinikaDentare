@@ -1,0 +1,260 @@
+---
+import { Image, getImage } from 'astro:assets';
+import PageHeader from '../PageHeader.astro';
+import ClosingCta from '../ClosingCta.astro';
+import Arrow from '../Arrow.astro';
+import { useT, type Lang } from '../../i18n';
+import { gallery, type GalleryCategory } from '../../data/gallery';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useT(lang);
+const cats = t.gallery.categories;
+const filters: GalleryCategory[] = ['interior', 'team', 'treatment'];
+
+// Large version for the lightbox; the grid itself only loads small tiles.
+const full = await Promise.all(gallery.map((item) => getImage({ src: item.image, width: 1800 })));
+---
+
+<PageHeader lang={lang} eyebrow={t.gallery.label} title={t.gallery.pageTitle} compact />
+
+<section class="g container" aria-label={t.gallery.pageTitle}>
+  <div class="filters" data-gallery-filter role="group" aria-label={t.gallery.label} data-reveal="fade">
+    <button type="button" data-filter="all" aria-pressed="true">{t.gallery.filterAll}</button>
+    {filters.map((f) => (
+      <button type="button" data-filter={f} aria-pressed="false">{cats[f]}</button>
+    ))}
+  </div>
+
+  <div class="photos">
+    {gallery.map((item, i) => (
+      <figure class="tile" data-category={item.category}>
+        <button
+          type="button"
+          class="media tile-media"
+          data-reveal="mask"
+          data-lightbox-open={i}
+          data-full={full[i].src}
+          aria-label={`${t.gallery.open}: ${item.alt}`}
+        >
+          <Image src={item.image} alt={item.alt} widths={[400, 600, 900]} sizes="(max-width: 760px) 50vw, (max-width: 1100px) 33vw, 25vw" />
+          <span class="tile-tag">{cats[item.category]}</span>
+        </button>
+      </figure>
+    ))}
+  </div>
+</section>
+
+<dialog class="lightbox" data-lightbox data-lenis-prevent aria-label={t.gallery.pageTitle}>
+  <button type="button" class="lb-close" data-lightbox-close aria-label={t.nav.close}>
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4l12 12M16 4 4 16" stroke="currentColor" stroke-width="1.2" /></svg>
+  </button>
+  <figure class="lb-stage">
+    <img data-lightbox-img alt="" />
+    <figcaption>
+      <span class="index-num" data-lightbox-count></span>
+      <span data-lightbox-caption></span>
+    </figcaption>
+  </figure>
+  <button type="button" class="lb-nav lb-prev" data-lightbox-prev aria-label={t.gallery.prev}><Arrow /></button>
+  <button type="button" class="lb-nav lb-next" data-lightbox-next aria-label={t.gallery.next}><Arrow /></button>
+</dialog>
+
+<ClosingCta lang={lang} />
+
+<style>
+  .g {
+    padding-bottom: var(--section-sm);
+  }
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 28px;
+    padding-bottom: 16px;
+    margin-bottom: clamp(24px, 2.5vw, 40px);
+    border-bottom: 1px solid var(--line);
+  }
+  .filters button {
+    position: relative;
+    padding: 6px 0;
+    font-size: 0.9375rem;
+    color: var(--muted);
+    transition: color 0.4s var(--ease);
+  }
+  .filters button::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -17px;
+    height: 1px;
+    background: var(--crimson);
+    transform: scaleX(0);
+    transition: transform 0.6s var(--ease);
+  }
+  .filters button:hover,
+  .filters button[aria-pressed='true'] {
+    color: var(--ink);
+  }
+  .filters button[aria-pressed='true']::after {
+    transform: scaleX(1);
+  }
+
+  /* Even grid: one shape for every photo, so rows always line up */
+  .photos {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--col-gap);
+  }
+  .tile[hidden] {
+    display: none;
+  }
+  .tile-media {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    cursor: zoom-in;
+  }
+  .tile-media :global(img) {
+    transition: transform 1.6s var(--ease);
+  }
+  .tile-media:hover :global(img),
+  .tile-media:focus-visible :global(img) {
+    transform: scale(1.045);
+  }
+  /* Category appears on hover instead of a caption under every photo */
+  .tile-tag {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    padding: 6px 10px;
+    background: rgb(250 249 247 / 0.92);
+    font-size: var(--fs-label);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink);
+    opacity: 0;
+    transform: translateY(6px);
+    transition:
+      opacity 0.5s var(--ease),
+      transform 0.5s var(--ease);
+  }
+  .tile-media:hover .tile-tag,
+  .tile-media:focus-visible .tile-tag {
+    opacity: 1;
+    transform: none;
+  }
+  .tile-media:focus-visible {
+    outline: 2px solid var(--crimson);
+    outline-offset: 3px;
+  }
+
+  @media (max-width: 1100px) {
+    .photos { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 760px) {
+    .photos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tile-tag { display: none; }
+  }
+
+  /* ---------- Lightbox ---------- */
+  .lightbox {
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: rgb(17 17 17 / 0.96);
+    color: var(--paper);
+    opacity: 0;
+    transition: opacity 0.4s var(--ease);
+  }
+  .lightbox[open] {
+    display: grid;
+    place-items: center;
+  }
+  .lightbox:global(.is-open) {
+    opacity: 1;
+  }
+  .lightbox::backdrop {
+    background: transparent;
+  }
+  .lb-stage {
+    display: grid;
+    gap: 14px;
+    justify-items: center;
+    padding: 72px clamp(16px, 8vw, 120px) 32px;
+  }
+  .lb-stage img {
+    max-width: 100%;
+    max-height: calc(100dvh - 160px);
+    width: auto;
+    height: auto;
+    object-fit: contain;
+  }
+  .lb-stage figcaption {
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+    font-size: var(--fs-small);
+    color: rgb(250 249 247 / 0.7);
+  }
+  .lb-close,
+  .lb-nav {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border: 1px solid var(--line-light);
+    border-radius: 50%;
+    color: var(--paper);
+    transition:
+      background-color 0.4s var(--ease),
+      border-color 0.4s var(--ease);
+  }
+  .lb-close:hover,
+  .lb-nav:hover {
+    background: var(--crimson);
+    border-color: var(--crimson);
+  }
+  .lb-close {
+    top: 16px;
+    right: 16px;
+  }
+  .lb-close svg {
+    width: 16px;
+    height: 16px;
+  }
+  .lb-nav {
+    top: 50%;
+    translate: 0 -50%;
+  }
+  .lb-nav :global(.arrow) {
+    width: 18px;
+  }
+  .lb-prev {
+    left: 16px;
+  }
+  .lb-prev :global(.arrow) {
+    transform: scaleX(-1);
+  }
+  .lb-next {
+    right: 16px;
+  }
+  @media (max-width: 760px) {
+    .lb-nav {
+      top: auto;
+      bottom: 16px;
+      translate: none;
+    }
+    .lb-stage {
+      padding-bottom: 80px;
+    }
+    .lb-stage img {
+      max-height: calc(100dvh - 200px);
+    }
+  }
+</style>

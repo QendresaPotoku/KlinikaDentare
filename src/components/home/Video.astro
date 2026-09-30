@@ -1,0 +1,208 @@
+---
+import { Image } from 'astro:assets';
+import { useT, type Lang } from '../../i18n';
+import { site } from '../../config/site';
+import poster from '../../assets/photos/video-poster.jpg';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useT(lang);
+const src = site.video.src;
+---
+
+<section class="video section on-dark" aria-labelledby="video-title" data-video data-src={src}>
+  <div class="container video-grid">
+    <header class="head">
+      <p class="label label--light" data-reveal="fade">{t.video.label}</p>
+      <h2 id="video-title" class="h2" data-split>{t.video.heading}</h2>
+      <p class="lead" data-reveal="fade">{t.video.description}</p>
+      <ol class="points" data-reveal="fade">
+        {t.video.points.map((point, i) => (
+          <li>
+            <span class="index-num">{String(i + 1).padStart(2, '0')}</span>
+            <span>{point}</span>
+          </li>
+        ))}
+      </ol>
+    </header>
+
+    <div class="video-frame media">
+      <Image src={poster} alt="" widths={[800, 1200, 1600, 2000, 2400]} sizes="(max-width: 960px) 100vw, 58vw" class="poster" />
+      <div class="video-shade" aria-hidden="true"></div>
+      <button class="play" type="button" data-video-play aria-label={t.video.play}>
+        <span class="play-ring" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5L8 5.5Z" fill="currentColor" /></svg>
+        </span>
+        {/* <span class="play-label">{t.video.play}</span> */}
+      </button>
+      {!src && (
+        <>
+          <p class="pending" role="status">{t.video.pending}</p>
+          <span class="sample-tag frame-tag">{t.common.placeholder}</span>
+        </>
+      )}
+    </div>
+  </div>
+</section>
+
+<style>
+  .video {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .video-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    align-items: center;
+    gap: clamp(40px, 6vw, 110px);
+  }
+  .head {
+    display: grid;
+    gap: 28px;
+    align-content: center;
+  }
+  .head .h2 {
+    color: var(--paper);
+  }
+  .head .lead {
+    color: rgb(250 249 247 / 0.75);
+  }
+  .points {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+    border-top: 1px solid rgb(250 249 247 / 0.14);
+  }
+  .points li {
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    padding-block: 16px;
+    border-bottom: 1px solid rgb(250 249 247 / 0.14);
+    color: rgb(250 249 247 / 0.9);
+  }
+  .points .index-num {
+    color: var(--crimson);
+  }
+  .video-frame {
+    aspect-ratio: 4 / 3;
+    background: #0e0d0d;
+  }
+  .video-frame :global(.poster) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 40%;
+    transition: transform 1.6s var(--ease);
+  }
+  .video-frame:hover :global(.poster) {
+    transform: scale(1.03);
+  }
+  .video-shade {
+    position: absolute;
+    inset: 0;
+    background: rgb(12 10 10 / 0.38);
+    transition: background-color 0.8s var(--ease);
+  }
+  .play {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    color: var(--paper);
+  }
+  .play-ring {
+    width: clamp(76px, 8vw, 112px);
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgb(250 249 247 / 0.6);
+    border-radius: 50%;
+    transition:
+      transform 0.8s var(--ease),
+      background-color 0.6s var(--ease),
+      border-color 0.6s var(--ease);
+  }
+  .play-ring svg {
+    width: 22%;
+    margin-left: 5%;
+  }
+  .play:hover .play-ring {
+    transform: scale(1.08);
+    background: var(--crimson);
+    border-color: var(--crimson);
+  }
+  .play-label {
+    font-size: var(--fs-label);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .pending {
+    position: absolute;
+    left: 50%;
+    bottom: 12%;
+    z-index: 3;
+    transform: translate(-50%, 10px);
+    opacity: 0;
+    padding: 12px 18px;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: var(--fs-small);
+    white-space: nowrap;
+    transition:
+      opacity 0.5s var(--ease),
+      transform 0.8s var(--ease);
+    pointer-events: none;
+  }
+  :global(.is-pending) .pending {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  .frame-tag {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 3;
+    color: var(--paper);
+    border-color: rgb(250 249 247 / 0.45);
+  }
+  :global(.is-playing) .play,
+  :global(.is-playing) .video-shade,
+  :global(.is-playing) :global(.poster) {
+    display: none;
+  }
+  .video-frame :global(.video-el) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+  }
+
+  @media (max-width: 960px) {
+    .video-grid {
+      grid-template-columns: 1fr;
+      gap: clamp(36px, 6vw, 56px);
+    }
+  }
+
+  @media (max-width: 760px) {
+    .video-frame {
+      aspect-ratio: 4 / 5;
+      margin-inline: calc(var(--gutter) * -1);
+    }
+    .play {
+      flex-direction: column;
+      gap: 16px;
+    }
+    .pending {
+      white-space: normal;
+      width: 84%;
+      text-align: center;
+    }
+  }
+</style>

@@ -1,0 +1,254 @@
+---
+/**
+ * Sticky treatment navigation shown on every category and sub-treatment page.
+ * Row 1: all categories. Row 2: the current category's overview + its sub-treatments.
+ * It sits under the site header and slides up with it when the header hides on scroll.
+ */
+import { useT, paths, type Lang } from '../i18n';
+import { treatments, type Treatment, type SubTreatment } from '../data/treatments';
+
+interface Props { lang: Lang; treatment: Treatment; sub?: SubTreatment }
+const { lang, treatment, sub } = Astro.props;
+const tp = useT(lang).treatmentPage;
+const slug = treatment.copy[lang].slug;
+---
+
+<nav class="tbar" aria-label={tp.barLabel} data-tbar>
+  <div class="row cats">
+    <ul class="scroll" data-tbar-scroll>
+      <li>
+        <a class="all" href={paths.treatments(lang)}>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 1.5h5v5h-5zM9.5 1.5h5v5h-5zM1.5 9.5h5v5h-5zM9.5 9.5h5v5h-5z" /></svg>
+          {tp.back}
+        </a>
+      </li>
+      {treatments.map((tr, i) => {
+        const active = tr === treatment;
+        return (
+          <li>
+            <a
+              class="cat"
+              href={paths.treatment(lang, tr.copy[lang].slug)}
+              aria-current={active ? (sub ? 'true' : 'page') : undefined}
+              data-active={active ? '' : undefined}
+            >
+              <span class="num">{String(i + 1).padStart(2, '0')}</span>
+              {tr.copy[lang].name}
+            </a>
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+
+  {treatment.children.length > 0 && (
+    <div class="row subs">
+      <ul class="scroll" data-tbar-scroll>
+        <li>
+          <a class="chip" href={paths.treatment(lang, slug)} aria-current={sub ? undefined : 'page'} data-active={sub ? undefined : ''}>
+            {tp.overview}
+          </a>
+        </li>
+        {treatment.children.map((s) => (
+          <li>
+            <a
+              class="chip"
+              href={paths.subTreatment(lang, slug, s.copy[lang].slug)}
+              aria-current={s === sub ? 'page' : undefined}
+              data-active={s === sub ? '' : undefined}
+            >
+              {s.copy[lang].name}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )}
+</nav>
+
+<script>
+  // Expose the bar's height so sticky content further down can sit just below it.
+  const bar = document.querySelector<HTMLElement>('[data-tbar]');
+  if (bar) {
+    const setHeight = () => document.documentElement.style.setProperty('--tbar-h', `${bar.offsetHeight}px`);
+    setHeight();
+    new ResizeObserver(setHeight).observe(bar);
+  }
+
+  // Bring the active item into view on narrow screens and fade the edges that overflow.
+  document.querySelectorAll<HTMLElement>('[data-tbar-scroll]').forEach((el) => {
+    const active = el.querySelector<HTMLElement>('[data-active]');
+    if (active && el.scrollWidth > el.clientWidth) {
+      el.scrollLeft = active.offsetLeft - (el.clientWidth - active.offsetWidth) / 2;
+    }
+    const update = () => {
+      const max = el.scrollWidth - el.clientWidth;
+      el.classList.toggle('fade-start', el.scrollLeft > 4);
+      el.classList.toggle('fade-end', el.scrollLeft < max - 4);
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+  });
+</script>
+
+<style>
+  .tbar {
+    position: sticky;
+    top: var(--header-h);
+    z-index: 90;
+    margin-top: var(--header-h);
+    background: rgb(250 249 247 / 0.94);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    transition: transform 0.7s var(--ease);
+  }
+  @supports (backdrop-filter: blur(1px)) {
+    .tbar {
+      background: rgb(250 249 247 / 0.86);
+      backdrop-filter: saturate(1.2) blur(14px);
+      -webkit-backdrop-filter: saturate(1.2) blur(14px);
+    }
+  }
+  /* Follow the header when it slides away on scroll */
+  :global(body:has(.site-header.is-hidden:not(.menu-open))) .tbar {
+    transform: translateY(calc(-1 * var(--header-h)));
+  }
+
+  /* Rows scroll sideways on narrow screens; padding keeps items aligned with .container */
+  .scroll {
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-inline: max(var(--gutter), calc((100% - var(--max)) / 2 + var(--gutter)));
+    scroll-padding-inline: var(--gutter);
+  }
+  .scroll::-webkit-scrollbar {
+    display: none;
+  }
+  .scroll.fade-start {
+    mask-image: linear-gradient(to right, transparent, #000 48px);
+  }
+  .scroll.fade-end {
+    mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent);
+  }
+  .scroll.fade-start.fade-end {
+    mask-image: linear-gradient(to right, transparent, #000 48px, #000 calc(100% - 48px), transparent);
+  }
+  li {
+    flex: none;
+  }
+
+  /* Categories */
+  .cats .scroll {
+    gap: clamp(22px, 2.4vw, 40px);
+  }
+  .all,
+  .cat {
+    position: relative;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    padding-block: 18px;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    white-space: nowrap;
+    color: var(--muted);
+    transition: color 0.4s var(--ease);
+  }
+  .all {
+    align-items: center;
+    padding-right: clamp(22px, 2.4vw, 40px);
+    border-right: 1px solid var(--line);
+    color: var(--ink);
+  }
+  .all svg {
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.3;
+  }
+  .num {
+    font-size: var(--fs-label);
+    letter-spacing: 0.1em;
+    color: var(--muted-light);
+    font-variant-numeric: tabular-nums;
+    transition: color 0.4s var(--ease);
+  }
+  .cat::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: var(--crimson);
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.6s var(--ease);
+  }
+  .all:hover,
+  .cat:hover,
+  .cat[data-active] {
+    color: var(--ink);
+  }
+  .all:hover {
+    color: var(--crimson);
+  }
+  .cat[data-active] .num {
+    color: var(--crimson);
+  }
+  .cat:hover::after,
+  .cat[data-active]::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+  .cat:not([data-active]):hover::after {
+    background: var(--line);
+  }
+
+  /* Sub-treatments */
+  .subs {
+    border-top: 1px solid var(--line);
+  }
+  .subs .scroll {
+    gap: 8px;
+    padding-block: 10px;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 16px;
+    border: 1px solid var(--line);
+    font-size: 0.875rem;
+    white-space: nowrap;
+    transition:
+      color 0.4s var(--ease),
+      background-color 0.4s var(--ease),
+      border-color 0.4s var(--ease);
+  }
+  .chip:hover {
+    border-color: var(--ink);
+  }
+  .chip[data-active] {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+  }
+
+  @media (max-width: 760px) {
+    .all,
+    .cat {
+      padding-block: 15px;
+      font-size: 0.875rem;
+    }
+    .chip {
+      min-height: 34px;
+      padding: 0 14px;
+      font-size: 0.8125rem;
+    }
+  }
+</style>

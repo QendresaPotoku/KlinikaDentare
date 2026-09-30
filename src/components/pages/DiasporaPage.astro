@@ -1,0 +1,384 @@
+---
+import { Image } from 'astro:assets';
+import Faq from '../Faq.astro';
+import Arrow from '../Arrow.astro';
+import Icon from '../Icon.astro';
+import Ph from '../Ph.astro';
+import { useT, paths, ph, type Lang } from '../../i18n';
+import { links, site } from '../../config/site';
+import { treatments } from '../../data/treatments';
+import haze from '../../assets/photos/prishtina-haze.jpg';
+import library from '../../assets/photos/prishtina-library.jpg';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useT(lang);
+const d = t.diasporaPage;
+---
+
+<section class="d-hero on-dark" data-hero aria-labelledby="d-title">
+  <div class="hero-media">
+    <Image src={haze} alt="Prishtinë" widths={[800, 1200, 1600, 2000, 2400]} sizes="100vw" loading="eager" fetchpriority="high" />
+  </div>
+  <div class="hero-shade" aria-hidden="true"></div>
+  <div class="hero-content container">
+    <p class="label label--light" data-reveal="fade" data-immediate data-delay="0.3">{d.eyebrow}</p>
+    <h1 id="d-title" class="h1" data-split data-immediate data-delay="0.4">{d.heading}</h1>
+    <p class="hero-text" data-reveal="fade" data-immediate data-delay="0.8">{d.intro}</p>
+    <div class="hero-ctas" data-reveal="fade" data-immediate data-delay="0.95">
+      <a class="btn btn--primary" href={links.whatsapp} target="_blank" rel="noopener"><Icon name="whatsapp" />WhatsApp<Arrow /></a>
+      <a class="btn btn--light" href={links.viber}><Icon name="viber" />Viber</a>
+    </div>
+  </div>
+</section>
+
+<div class="after-hero">
+  <section class="steps section container" aria-labelledby="steps-title">
+    <div class="steps-head grid">
+      <p class="label" data-reveal="fade">{d.stepsLabel}</p>
+      <h2 id="steps-title" class="h2" data-split>{d.stepsHeading}</h2>
+    </div>
+    <ol class="steps-list">
+      {d.steps.map((s, i) => (
+        <li data-reveal="fade">
+          <span class="num">{String(i + 1).padStart(2, '0')}</span>
+          <h3 class="step-title">{s.title}</h3>
+          <Ph as="p" class="body" text={s.text} lang={lang} />
+        </li>
+      ))}
+    </ol>
+  </section>
+
+  <section class="stay" aria-labelledby="stay-title">
+    <div class="stay-wrap">
+      <figure class="stay-img media" data-reveal="mask-side">
+        <div data-parallax="8">
+          <Image src={library} alt="Prishtinë" widths={[600, 900, 1300]} sizes="(max-width: 900px) 100vw, 45vw" />
+        </div>
+      </figure>
+      <div class="stay-copy">
+        <p class="label" data-reveal="fade">{d.stayLabel}</p>
+        <h2 id="stay-title" class="h2" data-split>{d.stayHeading}</h2>
+        <p class="body" data-reveal="fade">{d.stayText}</p>
+        <dl class="stay-list">
+          {d.stayItems.map((it) => (
+            <div data-reveal="fade">
+              <dt>{it.title}</dt>
+              <Ph as="dd" text={it.text} lang={lang} />
+            </div>
+          ))}
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section class="tr section container" aria-labelledby="tr-title">
+    <div class="tr-head">
+      <p class="label" data-reveal="fade">{d.treatmentsLabel}</p>
+      <h2 id="tr-title" class="h2" data-split>{d.treatmentsHeading}</h2>
+    </div>
+    <ul class="tr-list">
+      {treatments.map((tr, i) => (
+        <li data-reveal="fade">
+          <a href={paths.treatment(lang, tr.copy[lang].slug)}>
+            <span class="index-num">{String(i + 1).padStart(2, '0')}</span>
+            <span class="tr-name">{tr.copy[lang].name}</span>
+            <span class="tr-sum">
+              {tr.children.length > 0 ? tr.children.map((s) => s.copy[lang].name).join(' · ') : tr.copy[lang].summary}
+            </span>
+            <Arrow />
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+
+  <Faq lang={lang} id="faq" label={t.faq.label} heading={t.faq.heading} items={t.faq.items} />
+
+  <section class="d-contact section" aria-labelledby="dc-title">
+    <div class="container grid">
+      <div class="dc-main">
+        <p class="label" data-reveal="fade">{t.nav.contact}</p>
+        <h2 id="dc-title" class="h2 dc-heading" data-split>{d.contactHeading}</h2>
+        <p class="lead" data-reveal="fade">{d.contactText}</p>
+      </div>
+      <div class="dc-channels" data-reveal="fade">
+        <a href={links.whatsapp} target="_blank" rel="noopener"><Icon name="whatsapp" /><span>WhatsApp</span><Arrow /></a>
+        <a href={links.viber}><Icon name="viber" /><span>Viber</span><Arrow /></a>
+        <a href={links.tel}><Icon name="phone" /><span set:html={ph(site.phone.display, lang)} /><Arrow /></a>
+      </div>
+    </div>
+  </section>
+</div>
+
+<style>
+  .d-hero {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100svh;
+    min-height: 620px;
+    display: flex;
+    align-items: flex-end;
+    color: var(--paper);
+    overflow: hidden;
+    background: var(--ink);
+  }
+  .hero-media {
+    position: absolute;
+    inset: 0;
+  }
+  .hero-media :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .hero-shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgb(12 10 10 / 0.8), rgb(12 10 10 / 0.25) 65%, rgb(12 10 10 / 0.35));
+  }
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    gap: 28px;
+    justify-items: start;
+    padding-bottom: clamp(64px, 10vh, 120px);
+  }
+  .hero-content .h1 {
+    max-width: 15em;
+    color: var(--paper);
+    font-weight: 300;
+  }
+  .hero-text {
+    max-width: 34em;
+    font-size: var(--fs-lead);
+    color: rgb(250 249 247 / 0.85);
+  }
+  .hero-ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .after-hero {
+    position: relative;
+    z-index: 2;
+    background: var(--paper);
+  }
+
+  .steps-head {
+    row-gap: 24px;
+    margin-bottom: clamp(40px, 4.5vw, 72px);
+  }
+  .steps-head .label {
+    grid-column: 1 / span 3;
+    padding-top: 1.1em;
+  }
+  .steps-head .h2 {
+    grid-column: 4 / span 9;
+  }
+  .steps-list {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--col-gap);
+  }
+  .steps-list li {
+    display: grid;
+    gap: 14px;
+    align-content: start;
+    padding-top: 24px;
+    border-top: 1px solid var(--ink);
+  }
+  .num {
+    font-size: clamp(1.75rem, 2.4vw, 2.25rem);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: var(--crimson);
+  }
+  .step-title {
+    font-weight: 400;
+    font-size: clamp(1.1875rem, 1.4vw, 1.375rem);
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+  }
+
+  .stay {
+    background: var(--stone);
+  }
+  .stay-wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: clamp(40px, 7vw, 128px);
+    align-items: center;
+    max-width: var(--max);
+    margin-inline: auto;
+    padding-right: var(--gutter);
+  }
+  .stay-img {
+    min-height: min(76vh, 720px);
+    height: 100%;
+  }
+  .stay-copy {
+    display: grid;
+    gap: 26px;
+    justify-items: start;
+    padding-block: var(--section-sm);
+    max-width: 38rem;
+  }
+  .stay-list {
+    width: 100%;
+    border-top: 1px solid var(--line);
+  }
+  .stay-list div {
+    display: grid;
+    grid-template-columns: 34% 1fr;
+    gap: 16px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .stay-list dt {
+    font-weight: 500;
+  }
+  .stay-list dd {
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+
+  /* The FAQ below brings its own top spacing */
+  .tr {
+    padding-bottom: 0;
+  }
+  .tr-head {
+    display: grid;
+    gap: 24px;
+    margin-bottom: clamp(40px, 5vw, 72px);
+  }
+  .tr-list {
+    border-top: 1px solid var(--line);
+  }
+  .tr-list a {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1.2fr) minmax(0, 1fr) 24px;
+    align-items: center;
+    gap: 24px;
+    padding: 26px 0;
+    border-bottom: 1px solid var(--line);
+    transition: color 0.4s var(--ease);
+  }
+  .tr-name {
+    font-size: clamp(1.3125rem, 1.8vw, 1.75rem);
+    font-weight: 400;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+  }
+  .tr-sum {
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+  .tr-list a:hover {
+    color: var(--crimson);
+  }
+  .tr-list a :global(.arrow) {
+    width: 22px;
+    transition: transform 0.6s var(--ease);
+  }
+  .tr-list a:hover :global(.arrow) {
+    transform: translateX(6px);
+  }
+
+  .d-contact {
+    background: var(--blush);
+    padding-block: var(--section-sm);
+  }
+  .d-contact .grid {
+    align-items: center;
+    row-gap: 36px;
+  }
+  .dc-main {
+    grid-column: 1 / span 6;
+    display: grid;
+    gap: 22px;
+    justify-items: start;
+  }
+  .dc-heading {
+    font-weight: 300;
+  }
+  .dc-channels {
+    grid-column: 8 / span 5;
+  }
+  .dc-channels {
+    border-top: 1px solid rgb(23 23 23 / 0.15);
+  }
+  .dc-channels a {
+    display: grid;
+    grid-template-columns: 24px 1fr 22px;
+    gap: 16px;
+    align-items: center;
+    padding: 20px 0;
+    border-bottom: 1px solid rgb(23 23 23 / 0.15);
+    font-weight: 500;
+    transition: color 0.4s var(--ease);
+  }
+  .dc-channels a:hover {
+    color: var(--crimson);
+  }
+  .dc-channels :global(.icon) {
+    color: var(--crimson);
+  }
+
+  @media (max-width: 1024px) {
+    .steps-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      row-gap: 48px;
+    }
+    .dc-main,
+    .dc-channels {
+      grid-column: 1 / -1;
+    }
+  }
+  @media (max-width: 900px) {
+    .stay-wrap {
+      grid-template-columns: 1fr;
+      padding-right: 0;
+    }
+    .stay-img {
+      min-height: 0;
+      aspect-ratio: 4 / 3.4;
+    }
+    .stay-copy {
+      padding-inline: var(--gutter);
+      max-width: none;
+    }
+    .steps-head .label,
+    .steps-head .h2 {
+      grid-column: 1 / -1;
+      padding-top: 0;
+    }
+    .tr-list a {
+      grid-template-columns: 1fr 22px;
+      gap: 6px 16px;
+    }
+    .tr-list .index-num {
+      grid-column: 1 / -1;
+    }
+    .tr-sum {
+      grid-column: 1;
+    }
+    .tr-list a :global(.arrow) {
+      grid-row: 2 / span 2;
+      grid-column: 2;
+    }
+  }
+  @media (max-width: 600px) {
+    .steps-list {
+      grid-template-columns: 1fr;
+    }
+    .stay-list div {
+      grid-template-columns: 1fr;
+      gap: 4px;
+    }
+  }
+</style>

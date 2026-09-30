@@ -1,0 +1,142 @@
+---
+// "How a dental implant works": a looping 3D animation beside the four stages explained.
+// The GIF and its still first frame live in public/media/ (implant.gif, implant-poster.jpg).
+// With reduced motion the still frame is shown instead.
+import { useT, type Lang } from '../i18n';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const x = useT(lang).implantExplainer;
+---
+
+<section class="explainer section container" aria-labelledby="implant-explainer-title" data-implant>
+  <div class="grid">
+    <figure class="stage" data-reveal="fade">
+      <img
+        src="/media/implant-poster.jpg"
+        width="384"
+        height="216"
+        alt={x.figureLabel}
+        loading="lazy"
+        decoding="async"
+        data-implant-anim
+        data-anim="/media/implant.gif"
+        data-still="/media/implant-poster.jpg"
+      />
+
+    </figure>
+
+    <div class="copy">
+      <p class="label" data-reveal="fade">{x.label}</p>
+      <h2 id="implant-explainer-title" class="h2" data-split>{x.title}</h2>
+      <p class="lead" data-reveal="fade">{x.intro}</p>
+      <ol class="steps" data-reveal="fade">
+        {x.steps.map((s, i) => (
+          <li>
+            <span class="num">{String(i + 1).padStart(2, '0')}</span>
+            <span>
+              <strong class="step-title">{s.title}</strong>
+              <span class="step-text">{s.text}</span>
+            </span>
+          </li>
+        ))}
+      </ol>
+      <p class="note small">{x.note}</p>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Animate only while visible; with reduced motion the still first frame stays.
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll<HTMLElement>('[data-implant]').forEach((root) => {
+    const anim = root.querySelector<HTMLImageElement>('[data-implant-anim]');
+    if (!anim || reduced) return;
+
+    const show = (playing: boolean) => {
+      const src = (playing ? anim.dataset.anim : anim.dataset.still) ?? '';
+      if (!anim.src.endsWith(src)) anim.src = src;
+    };
+
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(([entry]) => show(entry.isIntersecting), { threshold: 0.25 }).observe(anim);
+    } else {
+      show(true);
+    }
+  });
+</script>
+
+<style>
+  .explainer .grid {
+    align-items: start;
+    row-gap: 48px;
+  }
+  /* Animation starts level with the heading and stays in view while the steps are read */
+  .stage {
+    grid-column: 1 / span 7;
+    position: sticky;
+    top: calc(var(--header-h) + 24px);
+  }
+  /* The clip has a white background; multiply blends it into the page colour. The stage
+     carries that colour itself, because the reveal animation isolates it from the page. */
+  .stage {
+    background: var(--paper);
+  }
+  .stage img {
+    width: 100%;
+    height: auto;
+    mix-blend-mode: multiply;
+  }
+  .copy {
+    grid-column: 8 / span 5;
+    display: grid;
+    gap: 24px;
+    justify-items: start;
+  }
+
+  .steps {
+    display: grid;
+    gap: 4px;
+    width: 100%;
+    margin-top: 8px;
+  }
+  .steps li {
+    display: grid;
+    grid-template-columns: 2.5em 1fr;
+    gap: 12px;
+    padding: 16px 0 14px;
+    border-top: 1px solid var(--line);
+  }
+  .num {
+    color: var(--crimson);
+    font-size: var(--fs-small);
+    line-height: 1.6;
+  }
+  .step-title {
+    display: block;
+    font-weight: 500;
+    line-height: 1.35;
+  }
+  .step-text {
+    display: block;
+    color: var(--muted);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    margin-top: 4px;
+  }
+  .note {
+    color: var(--muted-light);
+  }
+
+  @media (max-width: 900px) {
+    .stage,
+    .copy {
+      grid-column: 1 / -1;
+    }
+    .stage {
+      position: relative;
+      top: auto;
+    }
+  }
+</style>

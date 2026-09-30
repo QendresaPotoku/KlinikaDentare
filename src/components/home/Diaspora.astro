@@ -1,0 +1,163 @@
+---
+import { Image } from 'astro:assets';
+import Arrow from '../Arrow.astro';
+import Icon from '../Icon.astro';
+import Ph from '../Ph.astro';
+import { useT, paths, type Lang } from '../../i18n';
+import { links } from '../../config/site';
+import library from '../../assets/photos/prishtina-library.jpg';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useT(lang);
+---
+
+<section class="diaspora" id="diaspora" aria-labelledby="diaspora-title">
+  <div class="wrap">
+    <figure class="img media" data-reveal="mask-side">
+      <div data-parallax="8">
+        <Image
+          src={library}
+          alt="Prishtinë"
+          widths={[600, 900, 1300, 1800]}
+          sizes="(max-width: 900px) 100vw, 50vw"
+        />
+      </div>
+      <figcaption class="img-cap">Prishtinë</figcaption>
+    </figure>
+
+    <div class="content">
+      <p class="label" data-reveal="fade">{t.diaspora.label}</p>
+      <h2 id="diaspora-title" class="h3 heading" data-split>{t.diaspora.heading}</h2>
+      <p class="body" data-reveal="fade">{t.diaspora.text}</p>
+
+      <ol class="points">
+        {t.diaspora.points.map((p, i) => (
+          <li data-reveal="fade">
+            <span class="index-num">{String(i + 1).padStart(2, '0')}</span>
+            <div>
+              <p class="p-title">{p.title}</p>
+              <Ph as="p" class="p-text" text={p.text} lang={lang} />
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      <div class="ctas" data-reveal="fade">
+        <a class="btn btn--primary" href={paths.diaspora(lang)}>{t.diaspora.cta}<Arrow /></a>
+        <a class="btn btn--ghost" href={links.whatsapp} target="_blank" rel="noopener"><Icon name="whatsapp" class="icon wa" />WhatsApp</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .diaspora {
+    background: var(--stone);
+    padding-block: var(--section-sm);
+  }
+  .wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: clamp(40px, 5.5vw, 96px);
+    align-items: center;
+    max-width: var(--max);
+    margin-inline: auto;
+    padding-right: var(--gutter);
+  }
+  .img {
+    min-height: min(62vh, 600px);
+    height: 100%;
+  }
+  .img-cap {
+    position: absolute;
+    left: var(--gutter);
+    bottom: 22px;
+    z-index: 2;
+    color: var(--paper);
+    font-size: var(--fs-label);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .content {
+    display: grid;
+    gap: 20px;
+    justify-items: start;
+    max-width: 42rem;
+    padding-block: 8px;
+  }
+  .heading {
+    font-size: clamp(1.5rem, 2.1vw, 2.125rem);
+    line-height: 1.15;
+  }
+  /* The three steps read left to right, like the journey they describe */
+  .points {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(20px, 2vw, 32px);
+    margin-top: 4px;
+    padding-block: 20px;
+    border-block: 1px solid var(--line);
+  }
+  .points li {
+    display: grid;
+    align-content: start;
+    gap: 10px;
+  }
+  .points .index-num {
+    color: var(--crimson);
+  }
+  .p-title {
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .p-text {
+    color: var(--muted);
+    font-size: 0.875rem;
+    line-height: 1.55;
+  }
+  .ctas {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-top: 4px;
+  }
+  .wa {
+    width: 20px;
+    height: 20px;
+  }
+  @media (max-width: 900px) {
+    .wrap {
+      grid-template-columns: 1fr;
+      padding-right: 0;
+    }
+    .img {
+      min-height: 0;
+      aspect-ratio: 4 / 3.4;
+    }
+    .content {
+      padding-inline: var(--gutter);
+      max-width: none;
+    }
+  }
+  @media (max-width: 600px) {
+    .points {
+      grid-template-columns: 1fr;
+      gap: 0;
+      padding-block: 0;
+    }
+    .points li {
+      grid-template-columns: 40px 1fr;
+      gap: 8px;
+      padding: 14px 0;
+    }
+    .points li + li {
+      border-top: 1px solid var(--line);
+    }
+    .points .index-num {
+      padding-top: 0.35em;
+    }
+  }
+</style>
