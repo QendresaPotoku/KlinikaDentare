@@ -1,12 +1,52 @@
 # Klinika Dentare Dr. Petriti & Dr. Vlera
 
-Static website built with Astro, GSAP and Lenis. Three languages: Albanian (`/sq/`), English (`/en/`), German (`/de/`).
+Website built with Astro, GSAP and Lenis. Three languages: Albanian (`/sq/`), English (`/en/`), German (`/de/`).
+All content pages are pre-rendered; the online booking system (public API, patient cancellation page and the
+staff panel at `/admin/`) runs on a Node server (`@astrojs/node`, standalone) with PostgreSQL.
+
+**Deploying to production: follow [DEPLOYMENT.md](DEPLOYMENT.md).** Short version below.
+
+## Local development
 
 ```bash
 npm install
-npm run dev      # http://localhost:4321
-npm run build    # output in dist/
+cp .env.example .env            # then set APP_SECRET (command in the file)
+npm run db:up                   # local PostgreSQL in Docker (port 54329)
+npm run db:migrate              # create/upgrade the database schema
+npm run db:seed                 # first run only: the two doctors (no services, no working hours)
+npm run db:seed:demo            # optional, LOCAL ONLY: example services + working hours to try booking
+npm run admin:create -- --email you@example.com --name "Your Name"
+npm run dev                     # http://localhost:4321  (staff panel: /admin/)
+npm test                        # tests (uses TEST_DATABASE_URL, which is wiped on every run)
+npm run check                   # type check (must report 0 errors)
 ```
+
+Optional local test mail server: `docker compose --profile mail up -d mail`, then in `.env`
+`EMAIL_PROVIDER=smtp SMTP_HOST=127.0.0.1 SMTP_PORT=1025 SMTP_ALLOW_INSECURE=true EMAIL_FROM="Test <test@localhost>"`;
+inbox at http://localhost:8025. Development-only tools (Docker database, Mailpit, test databases such as
+`klinika_test`/`klinika_e2e`, the console email and SMS providers) are never used by a production deployment.
+`SMS_PROVIDER=console` in `.env` logs patient SMS locally (masked number, no text) instead of skipping them.
+
+## Production checklist (details in DEPLOYMENT.md)
+
+1. Provision PostgreSQL 15+ (managed service recommended) and **enable automatic backups**.
+2. Set the environment variables (see DEPLOYMENT.md); `NODE_ENV=production`.
+3. Generate `APP_SECRET` once: `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`.
+   **Never rotate it casually**: it protects every patient's cancellation link.
+4. Build with the real `PUBLIC_SITE_URL` set: `npm ci && npm run build`.
+5. Run migrations: `npm run db:migrate` (stop the deploy if it fails).
+6. Create the first staff account: `npm run admin:create -- --email … --name "…"`.
+7. Start: `npm start` (refuses to start if the configuration is unsafe; check with `npm run check:env`).
+8. Verify `GET /api/health/` returns `{"ok":true}`.
+9. In `/admin/`, configure services, dentists, dentist-service assignments and weekly schedules.
+10. Configure SMTP and verify the clinic notice arrives: set the clinic notification email in `/admin/settings/`,
+    make one test online booking, then cancel it. Patients get SMS, not email: connect an SMS provider
+    (not done yet, see DEPLOYMENT.md, "SMS") and check that the test booking's confirmation SMS arrives.
+11. Point the domain/DNS at the host; SPF, DKIM and DMARC for the sending domain.
+12. Verify HTTPS, the proxy settings (`TRUST_PROXY=true`) and that staff login works through the domain.
+13. **Online booking stays OFF** until the clinic has reviewed everything; then a staff member switches it on in
+    `/admin/settings/`.
+14. Confirm PostgreSQL backups are enabled and a restore has been tried once.
 
 ## Where content lives
 
@@ -26,7 +66,7 @@ crimson underline. Search the project for `[[` to find every one. Other items to
 
 - **All photos are illustrative Unsplash stock images**, marked "Foto ilustruese" on the page. This includes the two doctor portraits.
 - The testimonials are sample text, marked "Tekst shembull".
-- `site` in `astro.config.mjs` must be set to the real domain (canonical and hreflang URLs).
+- Canonical and hreflang URLs come from `PUBLIC_SITE_URL` at build time; build with the real domain.
 - The clinic video: put the file in `public/video/` and set `video.src` in `src/config/site.ts`.
 - The map shows Prishtina until `mapQuery` is set to the exact address.
 

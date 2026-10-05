@@ -1,0 +1,118 @@
+---
+/**
+ * Shell for the staff panel (/admin). Albanian only. Uses the site's colours, type and buttons, but
+ * none of the marketing-site scripts (no smooth scrolling or animations): it should feel instant.
+ */
+import { logError } from '../server/log.ts';
+import '../styles/global.css';
+import '../styles/admin.css';
+import LogoMark from '../components/LogoMark.astro';
+import { getSql } from '../server/db/client.ts';
+import { countAttention } from '../server/admin/attention.ts';
+
+export type AdminSection = 'calendar' | 'new' | 'attention' | 'doctors' | 'services' | 'time-off' | 'special-days' | 'settings' | 'staff';
+
+interface Props {
+  title: string;
+  /** Hide navigation (login page). */
+  bare?: boolean;
+  active?: AdminSection;
+}
+const { title, bare = false, active } = Astro.props;
+const staff = Astro.locals.staff;
+
+// Unresolved conflicts are shown on every admin page (badge + banner on the calendar).
+let attention = 0;
+if (!bare && staff) {
+  try {
+    attention = await countAttention(getSql(), Date.now());
+  } catch (err) {
+    logError('admin/attention-count', err);
+  }
+}
+
+const sections: { id: AdminSection; href: string; label: string }[] = [
+  { id: 'calendar', href: '/admin/', label: 'Kalendari' },
+  { id: 'attention', href: '/admin/attention/', label: 'Kërkojnë vëmendje' },
+  { id: 'doctors', href: '/admin/doctors/', label: 'Dentistët' },
+  { id: 'services', href: '/admin/services/', label: 'Shërbimet' },
+  { id: 'time-off', href: '/admin/time-off/', label: 'Mungesat' },
+  { id: 'special-days', href: '/admin/special-days/', label: 'Ditë të veçanta' },
+  { id: 'settings', href: '/admin/settings/', label: 'Rezervimi online' },
+  { id: 'staff', href: '/admin/staff/', label: 'Stafi' },
+];
+---
+
+<!doctype html>
+<html lang="sq">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="same-origin" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>{title} · Paneli i klinikës</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body class="adm">
+    {!bare && (
+      <>
+        <header class="adm-bar">
+          <a class="adm-brand" href="/admin/" aria-label="Kalendari">
+            <LogoMark class="adm-mark" />
+            <span class="adm-brand-text">Paneli <span>· Klinika Dentare</span></span>
+          </a>
+          <div class="adm-bar-end">
+            <a class="btn btn--primary btn--sm adm-new" href="/admin/appointments/new/" aria-current={active === 'new' ? 'page' : undefined}>
+              <span aria-hidden="true">+</span> Termin i ri
+            </a>
+            {staff && <span class="adm-user" title={staff.email}>{staff.name}</span>}
+            <form method="post" action="/admin/logout/">
+              <button class="adm-link" type="submit">Dil</button>
+            </form>
+          </div>
+        </header>
+        <nav class="adm-nav" aria-label="Seksionet">
+          {sections.map((s) => (
+            <a href={s.href} aria-current={active === s.id ? 'page' : undefined}>
+              {s.label}
+              {s.id === 'attention' && attention > 0 && <span class="adm-badge" aria-label={`${attention} termine`}>{attention}</span>}
+            </a>
+          ))}
+        </nav>
+      </>
+    )}
+    <main class="adm-main" id="main">
+      {active === 'calendar' && attention > 0 && (
+        <a class="adm-notice adm-attention" href="/admin/attention/">
+          <strong>{attention === 1 ? '1 termin' : `${attention} termine`} kërkon{attention === 1 ? '' : 'in'} vëmendje</strong>
+          — bien ndesh me orarin, mungesat ose konfigurimin aktual. Shiko listën →
+        </a>
+      )}
+      <slot />
+    </main>
+    <script>
+      import { normalizeTime } from '../scripts/admin-periods';
+      import { formatDateLong } from '../admin/strings';
+      // 24-hour time fields: tidy typed values ("830" → 08:30) when leaving the field.
+      document.addEventListener('focusout', (e) => {
+        const t = e.target as HTMLInputElement;
+        if (t.matches?.('input[data-time]') && t.value) t.value = normalizeTime(t.value);
+      });
+      // Date fields show the date written out, so day/month order is never ambiguous.
+      const label = (input: HTMLInputElement) => {
+        let out = input.parentElement?.querySelector<HTMLElement>(':scope > .date-label');
+        if (!out) {
+          out = document.createElement('small');
+          out.className = 'date-label';
+          input.insertAdjacentElement('afterend', out);
+        }
+        out.textContent = /^\d{4}-\d{2}-\d{2}$/.test(input.value) ? formatDateLong(input.value) : '';
+      };
+      document.querySelectorAll<HTMLInputElement>('.adm input[type=date]:not([data-wiz-date])').forEach((i) => {
+        label(i);
+        i.addEventListener('change', () => label(i));
+      });
+    </script>
+  </body>
+</html>

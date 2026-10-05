@@ -1,0 +1,35 @@
+---
+import { logError } from '../../../server/log.ts';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import AppointmentWizard from '../../../components/admin/AppointmentWizard.astro';
+import { getSql } from '../../../server/db/client.ts';
+import { adminCatalog } from '../../../server/http/admin-api.ts';
+import { todayLocal } from '../../../server/time.ts';
+
+export const prerender = false;
+
+let boot: Record<string, unknown> | null = null;
+try {
+  const catalog = (await adminCatalog(getSql())).body as Record<string, unknown>;
+  boot = { mode: 'new', today: todayLocal(Date.now()), ...catalog };
+} catch (err) {
+  logError('admin/new', err);
+}
+---
+
+<AdminLayout title="Termin i ri" active="new">
+  <a class="adm-link back" href="/admin/">← Kalendari</a>
+  <h1 class="adm-title page-title">Termin i ri</h1>
+  <p class="muted small intro">Për termine të marra me telefon, në klinikë ose në mënyrë tjetër.</p>
+  {boot ? <AppointmentWizard boot={boot} /> : <p class="adm-notice" role="alert">Faqja nuk mund të ngarkohet për momentin. Provoni përsëri pas pak.</p>}
+</AdminLayout>
+
+<style>
+  .back {
+    display: inline-block;
+    margin-bottom: 14px;
+  }
+  .intro {
+    margin: 4px 0 20px;
+  }
+</style>

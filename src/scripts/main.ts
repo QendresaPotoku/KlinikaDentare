@@ -7,6 +7,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SplitText } from 'gsap/SplitText';
 import Lenis from 'lenis';
+import { createBookingFlow } from './booking';
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
@@ -509,20 +510,16 @@ $$<HTMLAnchorElement>('.langs a[hreflang], .mm-langs a[hreflang]').forEach((a) =
 );
 
 /* ------------------------------------------------------------------ booking popup */
-// Any element with [data-book] opens the appointment form. Not connected to a backend yet.
+// Any element with [data-book] opens the online booking flow (src/scripts/booking.ts).
 const booking = $<HTMLDialogElement>('[data-booking]');
 if (booking) {
-  const form = $<HTMLFormElement>('[data-booking-form]', booking);
-  const success = $('[data-booking-success]', booking);
-  const date = $<HTMLInputElement>('[data-booking-date]', booking);
-  if (date) date.min = new Date().toISOString().slice(0, 10);
+  const flow = createBookingFlow(booking);
 
   const openBooking = () => {
-    if (form) form.hidden = false;
-    if (success) success.hidden = true;
     booking.showModal();
     requestAnimationFrame(() => booking.classList.add('is-open'));
     lenis?.stop();
+    void flow.onOpen();
   };
   const closeBooking = () => booking.close();
 
@@ -533,13 +530,6 @@ if (booking) {
   // Click on the dimmed area outside the panel closes it
   booking.addEventListener('click', (e) => e.target === booking && closeBooking());
   $$('[data-booking-close]', booking).forEach((btn) => btn.addEventListener('click', closeBooking));
-
-  form?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    form.reset();
-    form.hidden = true;
-    if (success) success.hidden = false;
-  });
 
   document.addEventListener('click', (e) => {
     const trigger = (e.target as Element).closest('[data-book]');
@@ -755,7 +745,7 @@ function initMotion() {
       tl.call(() => el.prepend(caret));
       chars.forEach((c) =>
         tl.call(() => {
-          c.style.visibility = 'visible';
+          (c as HTMLElement).style.visibility = 'visible';
           c.after(caret);
         }, undefined, `+=${0.045 + Math.random() * 0.04}`),
       );

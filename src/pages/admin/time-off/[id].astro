@@ -1,0 +1,86 @@
+---
+/** Edit or delete one absence. */
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import ConflictWarning from '../../../components/admin/ConflictWarning.astro';
+import TimeOffFields from '../../../components/admin/TimeOffFields.astro';
+import { getSql } from '../../../server/db/client.ts';
+import { deleteTimeOff, saveTimeOff } from '../../../server/admin/config.ts';
+import { acknowledgedOf, countLabel, emptyState, stateFromError, str, versionOf } from '../../../server/admin/forms.ts';
+import { describeTimeOffRange, reasonTitle, timeOffFormValues, type TimeOffRow } from '../../../server/admin/lists.ts';
+
+export const prerender = false;
+
+const id = Astro.params.id ?? '';
+if (!/^[0-9a-f-]{36}$/i.test(id)) return new Response(null, { status: 404 });
+const sql = getSql();
+let state = emptyState();
+let posted: ReturnType<typeof timeOffFormValues> | null = null;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  try {
+    if (str(form, 'intent') === 'delete') {
+      await deleteTimeOff(sql, id);
+      return Astro.redirect('/admin/time-off/?done=deleted', 303);
+    }
+    posted = {
+      doctorId: str(form, 'doctorId'),
+      reason: str(form, 'reason'),
+      mode: str(form, 'mode') === 'hours' ? 'hours' : 'days',
+      fromDate: str(form, 'fromDate'),
+      toDate: str(form, 'toDate'),
+      date: str(form, 'date'),
+      fromTime: str(form, 'fromTime'),
+      toTime: str(form, 'toTime'),
+      note: str(form, 'note'),
+    };
+    await saveTimeOff(sql, { ...posted, id, version: versionOf(form) }, { acknowledged: acknowledgedOf(form) });
+    return Astro.redirect('/admin/time-off/?done=saved', 303);
+  } catch (err) {
+    state = stateFromError(err, 'time-off');
+    if (state.stale) posted = null;
+    Astro.response.status = 409;
+  }
+}
+
+const [row] = await sql<TimeOffRow[]>`
+  SELECT t.id, t.doctor_id, d.name AS doctor_name, t.reason, t.note, t.starts_at, t.ends_at, t.all_day, t.updated_at
+  FROM time_off t JOIN doctors d ON d.id = t.doctor_id WHERE t.id = ${id}`;
+if (!row) return Astro.redirect('/admin/time-off/', 303);
+const doctors = await sql<{ id: string; name: string }[]>`
+  SELECT id, name FROM doctors WHERE active OR id = ${row.doctorId} ORDER BY sort_order, name`;
+const values = posted ?? timeOffFormValues(row);
+---
+
+<AdminLayout title="Mungesa" active="time-off">
+  <div class="cfg cfg-stack">
+    <a class="adm-link cfg-back" href="/admin/time-off/">← Mungesat</a>
+    <h1 class="adm-title">{row.doctorName} · {reasonTitle(row.reason)}</h1>
+    <p class="muted small first-up">{describeTimeOffRange(row)}</p>
+
+    <form class="adm-panel cfg-form" method="post">
+      <input type="hidden" name="intent" value="save" />
+      <input type="hidden" name="version" value={row.updatedAt.getTime()} />
+      {state.message && <p class={`adm-notice ${state.stale ? 'adm-notice--quiet' : ''}`} role="alert">{state.message}</p>}
+      <ConflictWarning conflicts={state.conflicts} title={`${countLabel(state.conflicts.length, 'termin bie', 'termine bien')} ndesh me këtë mungesë.`} />
+      <TimeOffFields doctors={doctors} values={values} fields={state.fields} />
+      <div class="cfg-actions">
+        <button class="btn btn--primary btn--sm" type="submit">{state.conflicts.length ? 'Konfirmo dhe ruaj' : 'Ruaj ndryshimet'}</button>
+      </div>
+    </form>
+
+    <form class="adm-panel cfg-form" method="post">
+      <input type="hidden" name="intent" value="delete" />
+      <h2 class="cfg-section-title">Fshi mungesën</h2>
+      <p class="cfg-help">Koha bëhet sërish e disponueshme sipas orarit të punës.</p>
+      <label class="adm-check"><input type="checkbox" required /><span>Po, fshije këtë mungesë</span></label>
+      <div class="cfg-actions"><button class="btn btn--danger btn--sm" type="submit">Fshi</button></div>
+    </form>
+  </div>
+</AdminLayout>
+
+<style>
+  .first-up::first-letter {
+    text-transform: uppercase;
+  }
+</style>

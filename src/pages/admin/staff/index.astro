@@ -1,0 +1,79 @@
+---
+/** Staff accounts: list + create. One permission level in V1. */
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { getSql } from '../../../server/db/client.ts';
+import { createStaffUser } from '../../../server/admin/config.ts';
+import { emptyState, stateFromError, str } from '../../../server/admin/forms.ts';
+import { clinicDate, clinicTime, formatDateLong } from '../../../admin/strings.ts';
+
+export const prerender = false;
+
+const sql = getSql();
+const me = Astro.locals.staff!;
+let state = emptyState();
+let values = { name: '', email: '' };
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  values = { name: str(form, 'name'), email: str(form, 'email') };
+  try {
+    await createStaffUser(sql, { ...values, password: str(form, 'password') });
+    return Astro.redirect('/admin/staff/?done=created', 303);
+  } catch (err) {
+    state = stateFromError(err, 'staff');
+    Astro.response.status = 409;
+  }
+}
+const users = await sql<{ id: string; name: string; email: string; active: boolean; lastLoginAt: Date | null }[]>`
+  SELECT id, name, email, active, last_login_at FROM admin_users ORDER BY active DESC, name`;
+---
+
+<AdminLayout title="Stafi" active="staff">
+  <div class="cfg cfg-stack">
+    <header class="cfg-head">
+      <div>
+        <h1 class="adm-title">Stafi</h1>
+        <p class="muted small">Llogaritë që mund të hyjnë në këtë panel. Të gjitha kanë të njëjtat të drejta.</p>
+      </div>
+    </header>
+    {Astro.url.searchParams.get('done') === 'created' && <p class="adm-notice adm-notice--ok" role="status">Llogaria u krijua.</p>}
+
+    <div class="cfg-list">
+      {users.map((u) => (
+        <a class={`cfg-item ${u.active ? '' : 'is-off'}`} href={`/admin/staff/${u.id}/`}>
+          <div>
+            <p class="cfg-item-title">{u.name}{u.id === me.id && <span class="muted small"> (ju)</span>}</p>
+            <p class="cfg-item-sub">{u.email}</p>
+            <p class="cfg-item-sub">
+              {u.lastLoginAt ? `Hyrja e fundit: ${formatDateLong(clinicDate(u.lastLoginAt)).replace(/^[^,]+,\s*/, '')}, ${clinicTime(u.lastLoginAt)}` : 'Nuk ka hyrë ende'}
+            </p>
+          </div>
+          <span class={`chip ${u.active ? 'chip--ok' : 'chip--off'}`}>{u.active ? 'Aktiv' : 'Joaktiv'}</span>
+        </a>
+      ))}
+    </div>
+
+    <form class="adm-panel cfg-form" method="post" autocomplete="off">
+      <h2 class="cfg-section-title">Shto anëtar stafi</h2>
+      {state.message && <p class="adm-notice" role="alert">{state.message}</p>}
+      <div class="cfg-row">
+        <label class="adm-field">
+          <span>Emri</span>
+          <input type="text" name="name" required maxlength="120" value={values.name} />
+          {state.fields.name && <small class="adm-error">{state.fields.name}</small>}
+        </label>
+        <label class="adm-field">
+          <span>Email-i (për hyrje)</span>
+          <input type="email" name="email" required maxlength="254" value={values.email} />
+          {state.fields.email && <small class="adm-error">{state.fields.email}</small>}
+        </label>
+      </div>
+      <label class="adm-field">
+        <span>Fjalëkalimi i parë</span>
+        <input type="password" name="password" required minlength="10" autocomplete="new-password" />
+        <small class="cfg-help">Të paktën 10 karaktere. Jepjani personit në mënyrë të sigurt; mund ta ndryshojë më vonë.</small>
+        {state.fields.password && <small class="adm-error">{state.fields.password}</small>}
+      </label>
+      <div class="cfg-actions"><button class="btn btn--primary btn--sm" type="submit">Krijo llogarinë</button></div>
+    </form>
+  </div>
+</AdminLayout>

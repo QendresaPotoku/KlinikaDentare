@@ -1,89 +1,185 @@
 ---
 /**
- * Appointment request popup. Opened by any element with `data-book`.
- * Not connected to a backend yet: submitting only shows the confirmation state.
+ * Online booking popup. Opened by any element with `data-book`.
+ * Steps: service → dentist → date → time → details → review → success. Everything bookable
+ * (services, dentists, dates, times) comes from /api/booking/*; nothing is hard-coded here.
+ * Behaviour lives in src/scripts/booking.ts.
  */
 import Arrow from './Arrow.astro';
+import Icon from './Icon.astro';
 import { useT, type Lang } from '../i18n';
-import { treatments } from '../data/treatments';
+import { site, links } from '../config/site';
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 const t = useT(lang);
 const b = t.booking;
+
+// Strings the script needs, embedded once per page (escaped for safe inclusion in <script>).
+const strings = JSON.stringify(b).replace(/</g, '\\u003c');
 ---
 
-<dialog class="booking" aria-labelledby="booking-title" data-booking data-lenis-prevent>
+<dialog class="booking" aria-labelledby="booking-title" data-booking data-lenis-prevent data-lang={lang}>
   <div class="panel">
     <button type="button" class="close" data-booking-close aria-label={b.close}>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="1.4" /></svg>
     </button>
 
-    <form class="form" data-booking-form>
-      <header class="head">
-        <h2 id="booking-title" class="h3">{b.title}</h2>
-        <p class="intro">{b.intro}</p>
-      </header>
-
-      <div class="fields">
-        <label class="field field--full">
-          <span>{b.name}</span>
-          <input type="text" name="name" autocomplete="name" required />
-        </label>
-        <label class="field">
-          <span>{b.phone}</span>
-          <input type="tel" name="phone" autocomplete="tel" required />
-        </label>
-        <label class="field">
-          <span>{b.email} <em>({b.optional})</em></span>
-          <input type="email" name="email" autocomplete="email" />
-        </label>
-        <label class="field field--full">
-          <span>{b.treatment}</span>
-          <select name="treatment">
-            <option value="">{b.treatmentAny}</option>
-            {treatments.map((tr) => (
-              <optgroup label={tr.copy[lang].name}>
-                <option value={tr.id}>{tr.copy[lang].name}</option>
-                {tr.children.map((s) => <option value={`${tr.id}/${s.id}`}>{s.copy[lang].name}</option>)}
-              </optgroup>
-            ))}
-          </select>
-        </label>
-        <label class="field">
-          <span>{b.date}</span>
-          <input type="date" name="date" data-booking-date />
-        </label>
-        <label class="field">
-          <span>{b.time}</span>
-          <select name="time">
-            <option value="any">{b.times.any}</option>
-            <option value="morning">{b.times.morning}</option>
-            <option value="afternoon">{b.times.afternoon}</option>
-          </select>
-        </label>
-        <label class="field field--full">
-          <span>{b.message} <em>({b.optional})</em></span>
-          <textarea name="message" rows="3"></textarea>
-        </label>
+    <header class="head">
+      <h2 id="booking-title" class="h3">{b.title}</h2>
+      <div class="progress" data-bk-progress hidden>
+        <p class="progress-label" data-bk-progress-label></p>
+        <span class="progress-bar" aria-hidden="true"><span data-bk-progress-fill></span></span>
       </div>
+    </header>
 
-      <button type="submit" class="btn btn--primary submit">{b.submit}<Arrow /></button>
-    </form>
+    <p class="sr-only" role="status" aria-live="polite" data-bk-live></p>
+    <div class="alert" role="alert" data-bk-alert hidden></div>
 
-    <div class="success" data-booking-success hidden>
-      <span class="tick" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
-      </span>
-      <h2 class="h3">{b.successTitle}</h2>
-      <p class="intro">{b.successText}</p>
-      <button type="button" class="btn btn--ghost" data-booking-close>{b.done}</button>
+    <div class="bk-body">
+      <!-- Loading -->
+      <section class="step step--center" data-bk-step="loading">
+        <span class="spinner" aria-hidden="true"></span>
+        <p class="muted">{b.loading}</p>
+      </section>
+
+      <!-- Online booking off / not configured / cannot load -->
+      <section class="step" data-bk-step="closed" hidden>
+        <h3 class="step-title" tabindex="-1">{b.closedTitle}</h3>
+        <p class="step-intro" data-bk-closed-message></p>
+        <div class="contact">
+          <a class="btn btn--primary" href={links.tel}><Icon name="phone" class="icon ic" />{b.call} {site.phone.display}</a>
+          <a class="btn btn--ghost" href={links.whatsapp} target="_blank" rel="noopener"><Icon name="whatsapp" class="icon ic" />{b.whatsapp}</a>
+        </div>
+      </section>
+
+      <section class="step" data-bk-step="service" hidden>
+        <h3 class="step-title" tabindex="-1">{b.headings.service}</h3>
+        <p class="step-intro">{b.intros.service}</p>
+        <div class="choices" data-bk-services></div>
+      </section>
+
+      <section class="step" data-bk-step="doctor" hidden>
+        <h3 class="step-title" tabindex="-1">{b.headings.doctor}</h3>
+        <p class="step-intro">{b.intros.doctor}</p>
+        <div class="choices" data-bk-doctors></div>
+      </section>
+
+      <section class="step" data-bk-step="date" hidden>
+        <h3 class="step-title" tabindex="-1">{b.headings.date}</h3>
+        <p class="step-intro" data-bk-date-intro>{b.intros.date}</p>
+        <div class="calendar" data-bk-calendar>
+          <div class="cal-head">
+            <button type="button" class="cal-nav" data-bk-month="-1" aria-label={b.calendar.prev}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.4" /></svg>
+            </button>
+            <p class="cal-month" data-bk-month-label aria-live="polite"></p>
+            <button type="button" class="cal-nav" data-bk-month="1" aria-label={b.calendar.next}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.4" /></svg>
+            </button>
+          </div>
+          <div class="cal-grid" data-bk-days></div>
+        </div>
+        <div class="empty" data-bk-no-dates hidden>
+          <p data-bk-no-dates-text></p>
+          <p class="muted">{b.noDatesHint}</p>
+          <div class="contact">
+            <button type="button" class="btn btn--ghost" data-bk-goto="doctor">{b.otherDoctor}</button>
+            <a class="btn btn--ghost" href={links.tel}><Icon name="phone" class="icon ic" />{site.phone.display}</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="step" data-bk-step="time" hidden>
+        <h3 class="step-title" tabindex="-1">{b.headings.time}</h3>
+        <p class="step-intro"><span class="chosen" data-bk-time-date></span> · {b.intros.time}</p>
+        <div class="times" data-bk-times></div>
+      </section>
+
+      <section class="step" data-bk-step="details" hidden>
+        <h3 class="step-title" tabindex="-1">{b.headings.details}</h3>
+        <p class="step-intro">{b.intros.details}</p>
+        <form class="fields" data-bk-details novalidate>
+          <label class="field field--full">
+            <span>{b.fields.name}</span>
+            <input type="text" name="patientName" autocomplete="name" maxlength="200" required aria-describedby="bk-err-patientName" />
+            <small class="field-error" id="bk-err-patientName" hidden></small>
+          </label>
+
+          <div class="field field--full">
+            <label for="bk-phone"><span>{b.fields.phone}</span></label>
+            <div class="phone">
+              <label class="phone-country">
+                <span class="sr-only">{b.fields.country}</span>
+                <span class="phone-dial" data-bk-dial aria-hidden="true">+383</span>
+                <select name="phoneCountry" data-bk-country autocomplete="tel-country-code"></select>
+              </label>
+              <input id="bk-phone" type="tel" name="patientPhone" autocomplete="tel-national" inputmode="tel" maxlength="32" required
+                aria-describedby="bk-hint-phone bk-err-patientPhone" />
+            </div>
+            <small class="field-hint" id="bk-hint-phone">{b.phoneHint}</small>
+            <small class="field-error" id="bk-err-patientPhone" hidden></small>
+          </div>
+
+          <label class="field field--full">
+            <span>{b.fields.email} <em data-bk-email-optional hidden>({b.fields.optional})</em></span>
+            <input type="email" name="patientEmail" autocomplete="email" maxlength="254" aria-describedby="bk-err-patientEmail" />
+            <small class="field-error" id="bk-err-patientEmail" hidden></small>
+          </label>
+
+          <label class="field field--full">
+            <span>{b.fields.note} <em>({b.fields.optional})</em></span>
+            <textarea name="patientNote" rows="3" maxlength="2000"></textarea>
+          </label>
+
+          <div class="field field--full">
+            <label class="check">
+              <input type="checkbox" name="consent" aria-describedby="bk-err-consent" />
+              <span>{b.fields.consent}</span>
+            </label>
+            <small class="field-error" id="bk-err-consent" hidden></small>
+          </div>
+
+          <!-- Honeypot: invisible to people and screen readers; bots that fill every field are rejected. -->
+          <div class="hp" aria-hidden="true">
+            <label>Website <input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+          </div>
+        </form>
+      </section>
+
+      <section class="step" data-bk-step="review" hidden>
+        <h3 class="step-title" tabindex="-1">{b.headings.review}</h3>
+        <p class="step-intro">{b.intros.review}</p>
+        <dl class="summary" data-bk-summary></dl>
+      </section>
+
+      <section class="step step--center" data-bk-step="success" hidden>
+        <span class="tick" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
+        </span>
+        <h3 class="h3 step-title" tabindex="-1">{b.successTitle}</h3>
+        <p class="success-text" data-bk-success-text></p>
+        <p class="muted" data-bk-success-sms hidden></p>
+        <p class="muted small">{b.successHelp}</p>
+        <button type="button" class="btn btn--ghost" data-booking-close>{b.done}</button>
+      </section>
     </div>
+
+    <footer class="actions" data-bk-actions hidden>
+      <button type="button" class="btn btn--ghost back" data-bk-back>{b.back}</button>
+      <button type="button" class="btn btn--primary next" data-bk-next>
+        <span data-bk-next-label>{b.continue}</span><Arrow />
+      </button>
+    </footer>
   </div>
+
+  <script type="application/json" data-bk-strings set:html={strings} />
 </dialog>
 
-<style>
+<style is:global>
+  /* Scoped by .booking: rows, days and times are created by the script, so styles are global. */
   .booking {
+    --pad: clamp(24px, 4vw, 44px);
     width: min(640px, calc(100vw - 32px));
     max-height: calc(100dvh - 32px);
     margin: auto;
@@ -99,7 +195,7 @@ const b = t.booking;
       opacity 0.4s var(--ease),
       transform 0.5s var(--ease);
   }
-  .booking:global(.is-open) {
+  .booking.is-open {
     opacity: 1;
     transform: none;
   }
@@ -107,17 +203,20 @@ const b = t.booking;
     background: rgb(18 16 16 / 0.6);
     backdrop-filter: blur(3px);
   }
-  .panel {
+  .booking .panel {
     position: relative;
-    padding: clamp(28px, 4vw, 48px);
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    padding: var(--pad) var(--pad) 0;
     border-top: 3px solid var(--crimson);
   }
-  .close {
+  .booking .close {
     position: absolute;
     top: 14px;
     right: 14px;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     display: grid;
     place-items: center;
     background: none;
@@ -125,51 +224,309 @@ const b = t.booking;
     color: var(--ink);
     cursor: pointer;
   }
-  .close svg {
+  .booking .close svg {
     width: 20px;
     height: 20px;
   }
-  .close:hover {
+  .booking .close:hover {
     color: var(--crimson);
   }
-  .head {
+  .booking :focus-visible {
+    outline: 2px solid var(--crimson);
+    outline-offset: 2px;
+  }
+
+  /* Header and progress */
+  .booking .head {
+    display: grid;
+    gap: 14px;
+    margin-bottom: 26px;
+  }
+  .booking #booking-title {
+    padding-right: 44px;
+  }
+  .booking .progress {
     display: grid;
     gap: 10px;
-    padding-right: 32px;
-    margin-bottom: 28px;
   }
-  .intro {
+  .booking .progress[hidden] {
+    display: none;
+  }
+  .booking .progress-label {
+    font-size: var(--fs-label);
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--crimson);
+  }
+  .booking .progress-bar {
+    display: block;
+    height: 1px;
+    background: var(--line);
+  }
+  .booking .progress-bar span {
+    display: block;
+    height: 1px;
+    width: 0;
+    background: var(--crimson);
+    transition: width 0.5s var(--ease);
+  }
+
+  /* Steps */
+  .booking .bk-body {
+    flex: 1;
+  }
+  .booking .step[hidden] {
+    display: none;
+  }
+  .booking .step {
+    display: grid;
+    gap: 6px;
+    padding-bottom: var(--pad);
+  }
+  .booking .step--center {
+    justify-items: center;
+    text-align: center;
+    gap: 14px;
+    padding-block: 24px var(--pad);
+  }
+  .booking .step-title {
+    font-size: 1.1875rem;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    outline: none;
+  }
+  .booking .step-intro,
+  .booking .muted {
     color: var(--muted);
     font-size: 0.9375rem;
     line-height: 1.55;
   }
-  .fields {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px 20px;
+  .booking .step-intro {
+    margin-bottom: 18px;
   }
-  .field {
+  .booking .chosen {
+    color: var(--ink);
+  }
+  .booking .small {
+    font-size: var(--fs-small);
+  }
+
+  /* Alerts */
+  .booking .alert {
+    margin-bottom: 20px;
+    padding: 14px 16px;
+    border-left: 3px solid var(--crimson);
+    background: var(--blush);
+    color: var(--ink);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+  }
+  .booking .alert[hidden] {
+    display: none;
+  }
+
+  /* Choice rows (service, dentist) */
+  .booking .choices {
+    display: grid;
+    gap: 10px;
+  }
+  .booking .choice {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+    min-height: 60px;
+    padding: 14px 18px;
+    background: #fff;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    font: inherit;
+    font-size: 1rem;
+    text-align: left;
+    cursor: pointer;
+    transition:
+      border-color 0.3s var(--ease),
+      box-shadow 0.3s var(--ease);
+  }
+  .booking .choice:hover {
+    border-color: var(--ink);
+  }
+  .booking .choice[aria-pressed='true'] {
+    border-color: var(--crimson);
+    box-shadow: inset 3px 0 0 var(--crimson);
+  }
+  .booking .choice-meta {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-size: var(--fs-small);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .booking .choice-meta svg {
+    width: 18px;
+    height: 10px;
+    color: var(--crimson);
+  }
+
+  /* Calendar */
+  .booking .calendar[hidden],
+  .booking .empty[hidden] {
+    display: none;
+  }
+  .booking .cal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .booking .cal-month {
+    font-size: var(--fs-label);
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .booking .cal-nav {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .booking .cal-nav svg {
+    width: 18px;
+    height: 18px;
+  }
+  .booking .cal-nav:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+  .booking .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .booking .cal-wd {
+    padding: 6px 0;
+    text-align: center;
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted-light);
+  }
+  .booking .cal-day {
+    position: relative;
+    min-height: 44px;
+    aspect-ratio: 1 / 0.86;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    background: none;
+    border: 1px solid transparent;
+    color: var(--muted-light);
+    font: inherit;
+    font-size: 0.9375rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .booking .cal-day.is-available {
+    background: #fff;
+    border-color: var(--line);
+    color: var(--ink);
+    cursor: pointer;
+    transition: border-color 0.3s var(--ease);
+  }
+  .booking .cal-day.is-available:hover {
+    border-color: var(--crimson);
+  }
+  .booking .cal-day.is-today::after {
+    content: '';
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    width: 4px;
+    height: 4px;
+    margin-left: -2px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .booking .cal-day[aria-pressed='true'] {
+    background: var(--crimson);
+    border-color: var(--crimson);
+    color: #fff;
+  }
+  .booking .empty {
+    display: grid;
+    gap: 10px;
+    padding: 18px;
+    border: 1px solid var(--line);
+    background: #fff;
+  }
+
+  /* Times */
+  .booking .times {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    gap: 8px;
+  }
+  .booking .time {
+    min-height: 48px;
+    background: #fff;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    font: inherit;
+    font-size: 1rem;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition:
+      border-color 0.3s var(--ease),
+      background-color 0.3s var(--ease);
+  }
+  .booking .time:hover {
+    border-color: var(--crimson);
+  }
+  .booking .time[aria-pressed='true'] {
+    background: var(--crimson);
+    border-color: var(--crimson);
+    color: #fff;
+  }
+
+  /* Details form */
+  .booking .fields {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .booking .field {
     display: grid;
     gap: 8px;
   }
-  .field--full {
-    grid-column: 1 / -1;
-  }
-  .field > span {
+  .booking .field > span,
+  .booking .field > label:not(.check) > span {
     font-size: var(--fs-label);
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--muted);
   }
-  .field em {
+  .booking .field em {
     font-style: normal;
     text-transform: none;
     letter-spacing: 0;
     color: var(--muted-light);
   }
-  .field input,
-  .field select,
-  .field textarea {
+  .booking .field em[hidden] {
+    display: none;
+  }
+  .booking .field input[type='text'],
+  .booking .field input[type='tel'],
+  .booking .field input[type='email'],
+  .booking .field textarea {
     width: 100%;
     padding: 12px 14px;
     font: inherit;
@@ -180,37 +537,137 @@ const b = t.booking;
     border-radius: 0;
     transition: border-color 0.3s var(--ease);
   }
-  .field textarea {
+  .booking .field textarea {
     resize: vertical;
     min-height: 88px;
   }
-  .field input:focus,
-  .field select:focus,
-  .field textarea:focus {
+  .booking .field input:focus,
+  .booking .field textarea:focus,
+  .booking .phone-country:focus-within {
     outline: none;
     border-color: var(--crimson);
   }
-  .submit {
-    margin-top: 28px;
-    width: 100%;
-    justify-content: center;
+  .booking .field [aria-invalid='true'] {
+    border-color: var(--crimson);
   }
-  .success {
-    display: grid;
-    justify-items: center;
-    gap: 14px;
-    padding: 24px 0 8px;
-    text-align: center;
+  .booking .field-hint {
+    color: var(--muted-light);
+    font-size: 0.8125rem;
+    line-height: 1.45;
   }
-  /* display: grid above would otherwise override the hidden attribute */
-  .form[hidden],
-  .success[hidden] {
+  .booking .field-error {
+    color: var(--crimson);
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+  .booking .field-error[hidden] {
     display: none;
   }
-  .success .btn {
-    margin-top: 12px;
+  .booking .phone {
+    display: flex;
   }
-  .tick {
+  .booking .phone-country {
+    position: relative;
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px 0 14px;
+    background: var(--stone);
+    border: 1px solid var(--line);
+    border-right: 0;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+  }
+  .booking .phone-dial::after {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-left: 8px;
+    border-right: 1px solid currentColor;
+    border-bottom: 1px solid currentColor;
+    transform: translateY(-3px) rotate(45deg);
+  }
+  /* The native select sits invisibly on top: native pickers on phones, short "+383" label on screen. */
+  .booking .phone-country select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    opacity: 0;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  .booking .phone input {
+    min-width: 0;
+    flex: 1;
+  }
+  .booking .check {
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 12px;
+    align-items: start;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+  .booking .check input {
+    width: 20px;
+    height: 20px;
+    margin: 1px 0 0;
+    accent-color: var(--crimson);
+  }
+  .booking .hp {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  /* Review */
+  .booking .summary {
+    display: grid;
+    border-top: 1px solid var(--line);
+  }
+  .booking .summary-row {
+    display: grid;
+    grid-template-columns: minmax(0, 9.5em) minmax(0, 1fr) auto;
+    gap: 6px 16px;
+    align-items: baseline;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .booking .summary dt {
+    font-size: var(--fs-label);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .booking .summary dd {
+    overflow-wrap: anywhere;
+    line-height: 1.45;
+  }
+  .booking .summary dd small {
+    display: block;
+    color: var(--muted);
+    font-size: var(--fs-small);
+  }
+  .booking .summary .edit {
+    background: none;
+    border: 0;
+    padding: 4px 0;
+    color: var(--crimson);
+    font: inherit;
+    font-size: var(--fs-small);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  /* Success and contact */
+  .booking .tick {
     width: 56px;
     height: 56px;
     display: grid;
@@ -219,14 +676,115 @@ const b = t.booking;
     background: var(--blush);
     color: var(--crimson);
   }
-  .tick svg {
+  .booking .tick svg {
     width: 26px;
     height: 26px;
   }
+  .booking .success-text {
+    max-width: 30em;
+    font-size: 1.0625rem;
+    line-height: 1.55;
+  }
+  .booking .step--center .btn {
+    margin-top: 10px;
+  }
+  .booking .contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .booking .contact .ic {
+    width: 18px;
+    height: 18px;
+  }
 
+  /* Loading */
+  .booking .spinner {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--line);
+    border-top-color: var(--crimson);
+    border-radius: 50%;
+    animation: bk-spin 0.9s linear infinite;
+  }
+  @keyframes bk-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .booking .spinner {
+      animation-duration: 2.5s;
+    }
+  }
+
+  /* Sticky actions: always reachable, also with the keyboard open on phones */
+  .booking .actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 calc(-1 * var(--pad));
+    padding: 14px var(--pad);
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+    background: var(--paper);
+    border-top: 1px solid var(--line);
+  }
+  .booking .actions[hidden],
+  .booking .actions .btn[hidden] {
+    display: none;
+  }
+  .booking .actions .next {
+    margin-left: auto;
+  }
+  .booking .actions .btn[aria-busy='true'] {
+    opacity: 0.7;
+    cursor: progress;
+  }
+
+  .booking .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Phones: full-screen sheet */
   @media (max-width: 560px) {
-    .fields {
-      grid-template-columns: 1fr;
+    .booking {
+      width: 100%;
+      max-width: 100%;
+      height: 100dvh;
+      max-height: 100dvh;
+      margin: 0;
+    }
+    .booking .head {
+      margin-bottom: 20px;
+    }
+    .booking .actions .btn {
+      flex: 1;
+      min-height: 50px;
+      padding: 0 14px;
+    }
+    .booking .actions .btn .arrow {
+      display: none;
+    }
+    .booking .summary-row {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .booking .summary dt {
+      grid-column: 1 / -1;
+    }
+    .booking .contact .btn {
+      width: 100%;
     }
   }
 </style>

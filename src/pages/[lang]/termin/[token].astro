@@ -1,0 +1,221 @@
+---
+/**
+ * Patient's private appointment page, reached from the link in the confirmation SMS:
+ *   /{lang}/termin/{token}/
+ * Shows the appointment and lets the patient cancel it until the cancellation deadline.
+ * Rendered on demand; never indexed. Cancelling takes two steps (button → confirmation), no JS needed.
+ */
+import { logError } from '../../../server/log.ts';
+import { DateTime } from 'luxon';
+import Base from '../../../layouts/Base.astro';
+import { isLang, languages, paths, useT, type Lang, type Alternates } from '../../../i18n';
+import { site, links } from '../../../config/site';
+import { getSql } from '../../../server/db/client.ts';
+import { cancelAppointmentByPatient, getByManageToken, type ManagedAppointment } from '../../../server/booking/appointments.ts';
+import { BookingError } from '../../../server/booking/errors.ts';
+import { CLINIC_TIME_ZONE, config } from '../../../server/config.ts';
+import { clientIp } from '../../../server/security/client-ip.ts';
+import { hitRateLimit } from '../../../server/security/rate-limit.ts';
+import { requestDispatch } from '../../../server/notifications/dispatcher.ts';
+
+export const prerender = false;
+
+const langParam = Astro.params.lang;
+if (!isLang(langParam)) return new Response(null, { status: 404 });
+const lang: Lang = langParam;
+const token = Astro.params.token ?? '';
+const t = useT(lang);
+const m = t.manage;
+
+Astro.response.headers.set('cache-control', 'no-store');
+// same-origin: the private URL is never sent to other sites, but the page's own form still gets an Origin
+// header (with no-referrer browsers send "Origin: null" and Astro's origin check rejects the POST).
+Astro.response.headers.set('referrer-policy', 'same-origin');
+
+type View = 'details' | 'confirm' | 'cancelled' | 'not_found' | 'error';
+let view: View = 'details';
+let managed: ManagedAppointment | undefined;
+let serviceName = '';
+
+try {
+  const sql = getSql();
+  // Links are 256-bit secrets (unguessable); this limit only stops bots hammering the page.
+  let socket: string | undefined;
+  try {
+    socket = Astro.clientAddress;
+  } catch {
+    socket = undefined;
+  }
+  const ip = clientIp(Astro.request, socket, config.trustProxy, config.trustProxyHops);
+  if (!(await hitRateLimit(sql, `manage:${ip}`, { limit: 60, windowSeconds: 600 }))) {
+    Astro.response.status = 429;
+    throw new Error('rate_limited');
+  }
+  if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData();
+    const action = form.get('action');
+    if (action === 'ask') view = 'confirm';
+    if (action === 'cancel') {
+      try {
+        await cancelAppointmentByPatient(sql, token);
+        requestDispatch(sql);
+        view = 'cancelled';
+      } catch (err) {
+        if (!(err instanceof BookingError)) throw err;
+        view = err.code === 'not_found' ? 'not_found' : 'details'; // e.g. deadline passed: details explain why
+      }
+    }
+  }
+  managed = await getByManageToken(sql, token);
+  if (!managed) view = 'not_found';
+  else {
+    const [names] = await sql<{ nameSq: string; nameEn: string | null; nameDe: string | null }[]>`
+      SELECT name_sq, name_en, name_de FROM services WHERE id = ${managed.appointment.serviceId}`;
+    if (names) serviceName = (lang === 'en' ? names.nameEn : lang === 'de' ? names.nameDe : null) ?? names.nameSq;
+  }
+  if (view === 'confirm' && !managed?.canCancel) view = 'details';
+} catch (err) {
+  if (!(err instanceof Error && err.message === 'rate_limited')) {
+    logError('manage', err);
+    Astro.response.status = 503;
+  }
+  view = 'error';
+}
+
+if (view === 'not_found') Astro.response.status = 404;
+
+const a = managed?.appointment;
+const fmt = (d: Date, format: string) => DateTime.fromJSDate(d, { zone: CLINIC_TIME_ZONE }).setLocale(lang).toFormat(format);
+const when = a ? `${fmt(a.startsAt, 'cccc, d LLLL yyyy')}, ${fmt(a.startsAt, 'HH:mm')}` : '';
+const deadline = managed ? `${fmt(managed.cancelDeadline, 'd LLLL yyyy')}, ${fmt(managed.cancelDeadline, 'HH:mm')}` : '';
+const self = `/${lang}/termin/${token}/`;
+const alternates = Object.fromEntries(languages.map((l) => [l, `/${l}/termin/${token}/`])) as Alternates;
+const kosovoTime = t.booking.kosovoTime;
+---
+
+<Base lang={lang} title={`${m.title} · ${site.shortName}`} description={m.title} alternates={alternates} noindex>
+  <section class="manage section">
+    <div class="container">
+      <div class="card">
+        <span class="label">{site.shortName}</span>
+
+        {view === 'not_found' && (
+          <>
+            <h1 class="h2">{m.title}</h1>
+            <p class="lead">{m.notFound}</p>
+          </>
+        )}
+
+        {view === 'error' && (
+          <>
+            <h1 class="h2">{m.title}</h1>
+            <p class="lead">{m.error}</p>
+          </>
+        )}
+
+        {view === 'cancelled' && (
+          <>
+            <h1 class="h2">{m.cancelledTitle}</h1>
+            <p class="lead">{m.cancelledText}</p>
+            <div class="actions">
+              <a class="btn btn--primary" href={paths.home(lang)} data-book>{m.bookAgain}</a>
+            </div>
+          </>
+        )}
+
+        {a && (view === 'details' || view === 'confirm') && (
+          <>
+            <h1 class="h2">{view === 'confirm' ? m.confirmTitle : m.title}</h1>
+            <dl class="facts">
+              <div><dt>{t.booking.summary.service}</dt><dd>{serviceName || a.serviceName}</dd></div>
+              <div><dt>{t.booking.summary.doctor}</dt><dd>{a.doctorName}</dd></div>
+              <div><dt>{t.booking.summary.when}</dt><dd>{when} <small>({kosovoTime})</small></dd></div>
+              <div><dt>{m.statusLabel}</dt><dd>{m.status[a.status]}</dd></div>
+            </dl>
+
+            {view === 'confirm' && (
+              <>
+                <p class="body">{m.confirmText}</p>
+                <form method="post" action={self} class="actions">
+                  <button class="btn btn--primary" type="submit" name="action" value="cancel">{m.confirmYes}</button>
+                  <a class="btn btn--ghost" href={self}>{m.confirmNo}</a>
+                </form>
+              </>
+            )}
+
+            {view === 'details' && managed!.canCancel && (
+              <>
+                <p class="body">{m.deadline.replace('{deadline}', deadline)}</p>
+                <form method="post" action={self} class="actions">
+                  <button class="btn btn--ghost" type="submit" name="action" value="ask">{m.cancel}</button>
+                </form>
+              </>
+            )}
+
+            {view === 'details' && !managed!.canCancel && a.status === 'scheduled' && <p class="body">{m.tooLate}</p>}
+          </>
+        )}
+
+        {view !== 'cancelled' && (
+          <div class="contact">
+            <a class="link link--crimson" href={links.tel}>{t.booking.call} {site.phone.display}</a>
+            <a class="link" href={paths.home(lang)}>{m.home}</a>
+          </div>
+        )}
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .manage {
+    padding-top: calc(var(--header-h) + var(--section-sm));
+  }
+  .card {
+    display: grid;
+    gap: 22px;
+    max-width: 640px;
+    padding: clamp(28px, 4vw, 48px);
+    background: #fff;
+    border-top: 3px solid var(--crimson);
+  }
+  .facts {
+    display: grid;
+    border-top: 1px solid var(--line);
+  }
+  .facts div {
+    display: grid;
+    grid-template-columns: minmax(0, 11em) minmax(0, 1fr);
+    gap: 6px 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .facts dt {
+    font-size: var(--fs-label);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .facts small {
+    color: var(--muted);
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    padding-top: 8px;
+  }
+  @media (max-width: 560px) {
+    .facts div {
+      grid-template-columns: 1fr;
+    }
+    .actions .btn {
+      width: 100%;
+    }
+  }
+</style>

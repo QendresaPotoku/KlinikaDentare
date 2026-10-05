@@ -1,0 +1,73 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { getSql } from '../../../server/db/client.ts';
+import { createDoctor } from '../../../server/admin/config.ts';
+import { emptyState, stateFromError, str } from '../../../server/admin/forms.ts';
+import { scheduleSummary } from '../../../admin/strings.ts';
+
+export const prerender = false;
+
+const sql = getSql();
+let state = emptyState();
+let newName = '';
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  newName = str(form, 'name');
+  try {
+    const id = await createDoctor(sql, { name: newName });
+    return Astro.redirect(`/admin/doctors/${id}/?done=created`, 303);
+  } catch (err) {
+    state = stateFromError(err, 'doctors');
+  }
+}
+
+const doctors = await sql<
+  { id: string; name: string; active: boolean; acceptsOnline: boolean; services: string[]; schedule: { weekday: number; startMinute: number; endMinute: number }[] }[]
+>`
+  SELECT d.id, d.name, d.active, d.accepts_online,
+         coalesce((SELECT array_agg(s.name_sq ORDER BY s.sort_order) FROM doctor_services ds JOIN services s ON s.id = ds.service_id WHERE ds.doctor_id = d.id AND s.active), '{}') AS services,
+         coalesce((SELECT json_agg(json_build_object('weekday', w.weekday, 'startMinute', w.start_minute, 'endMinute', w.end_minute)) FROM weekly_schedules w WHERE w.doctor_id = d.id), '[]') AS schedule
+  FROM doctors d ORDER BY d.active DESC, d.sort_order, d.name
+`;
+---
+
+<AdminLayout title="Dentistët" active="doctors">
+  <div class="cfg cfg-stack">
+    <header class="cfg-head">
+      <div>
+        <h1 class="adm-title">Dentistët</h1>
+        <p class="muted small">Orari i punës, shërbimet dhe rezervimi online për secilin dentist.</p>
+      </div>
+    </header>
+
+    <div class="cfg-list">
+      {doctors.map((d) => (
+        <a class={`cfg-item ${d.active ? '' : 'is-off'}`} href={`/admin/doctors/${d.id}/`}>
+          <div>
+            <p class="cfg-item-title">{d.name}</p>
+            <p class="cfg-item-sub">{scheduleSummary(d.schedule)}</p>
+            <p class="cfg-item-sub">{d.services.length ? d.services.join(', ') : 'Pa shërbime të caktuara'}</p>
+          </div>
+          <div class="cfg-chips">
+            {!d.active && <span class="chip chip--off">Joaktiv</span>}
+            {d.active && <span class={`chip ${d.acceptsOnline ? 'chip--ok' : 'chip--off'}`}>{d.acceptsOnline ? 'Online: po' : 'Online: jo'}</span>}
+            {d.active && d.schedule.length === 0 && <span class="chip chip--warn">Pa orar</span>}
+            {d.active && d.services.length === 0 && <span class="chip chip--warn">Pa shërbime</span>}
+          </div>
+        </a>
+      ))}
+    </div>
+
+    <form class="adm-panel cfg-form" method="post">
+      <h2 class="cfg-section-title">Shto dentist</h2>
+      {state.message && <p class="adm-notice" role="alert">{state.message}</p>}
+      <label class="adm-field">
+        <span>Emri</span>
+        <input type="text" name="name" required maxlength="120" placeholder="p.sh. Dr. Berisha" value={newName} />
+        {state.fields.name && <small class="adm-error">{state.fields.name}</small>}
+      </label>
+      <p class="cfg-help">Pas krijimit vendosni orarin e punës dhe shërbimet; pa to dentisti nuk ka orare online.</p>
+      <div class="cfg-actions"><button class="btn btn--primary btn--sm" type="submit">Shto</button></div>
+    </form>
+  </div>
+</AdminLayout>

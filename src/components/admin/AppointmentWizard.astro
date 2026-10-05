@@ -1,0 +1,315 @@
+---
+/**
+ * Staff booking wizard, used for manual appointments and for rescheduling.
+ *   new:        Service → Dentist → Date & time → Patient → Review
+ *   reschedule: Dentist → Date & time → Review
+ * All times come from /admin/api/slots/ (the booking engine). Logic: src/scripts/admin-wizard.ts.
+ */
+interface Props {
+  boot: Record<string, unknown>;
+}
+const { boot } = Astro.props;
+const data = JSON.stringify(boot).replace(/</g, '\\u003c');
+const reschedule = boot.mode === 'reschedule';
+---
+
+<div class="wiz" data-wizard>
+  <ol class="wiz-steps" data-wiz-steps aria-label="Hapat"></ol>
+  <p class="adm-notice" role="alert" data-wiz-alert hidden></p>
+
+  {!reschedule && (
+    <section class="wiz-step" data-step="service" hidden>
+      <h2 class="wiz-title" tabindex="-1">Shërbimi</h2>
+      <div class="adm-choices" data-wiz-services></div>
+    </section>
+  )}
+
+  <section class="wiz-step" data-step="doctor" hidden>
+    <h2 class="wiz-title" tabindex="-1">Dentisti</h2>
+    <div class="adm-choices" data-wiz-doctors></div>
+  </section>
+
+  <section class="wiz-step" data-step="time" hidden>
+    <h2 class="wiz-title" tabindex="-1">Data dhe ora</h2>
+    <div class="wiz-date">
+      <button type="button" class="wiz-arrow" data-wiz-day="-1" aria-label="Dita e kaluar">‹</button>
+      <label class="sr-only" for="wiz-date">Data</label>
+      <input id="wiz-date" type="date" data-wiz-date />
+      <button type="button" class="wiz-arrow" data-wiz-day="1" aria-label="Dita tjetër">›</button>
+      <button type="button" class="btn btn--ghost btn--sm" data-wiz-today>Sot</button>
+    </div>
+    <p class="wiz-day-label" data-wiz-day-label></p>
+    <p class="muted small" data-wiz-hours></p>
+
+    <h3 class="label-sm wiz-sub">Orare të lira</h3>
+    <div class="adm-times" data-wiz-free></div>
+    <p class="muted small" data-wiz-free-empty hidden>Nuk ka orare të lira brenda orarit të punës në këtë ditë.</p>
+
+    <details class="wiz-outside" data-wiz-outside-wrap hidden>
+      <summary class="adm-link" data-wiz-outside-summary></summary>
+      <p class="muted small">Këto kohë janë jashtë orarit, në pushim ose në ditë të mbyllur. Mund të përdoren vetëm me konfirmim të veçantë.</p>
+      <div class="adm-times" data-wiz-outside></div>
+    </details>
+
+    <div class="wiz-custom">
+      <label class="adm-field">
+        <span>Ora tjetër <em>(p.sh. 10:10)</em></span>
+        <input type="text" data-time inputmode="numeric" maxlength="5" placeholder="10:10" data-wiz-custom-time />
+      </label>
+      <button type="button" class="btn btn--ghost btn--sm" data-wiz-custom-use>Përdor këtë orë</button>
+    </div>
+    <p class="wiz-picked" data-wiz-picked hidden></p>
+  </section>
+
+  {!reschedule && (
+    <section class="wiz-step" data-step="patient" hidden>
+      <h2 class="wiz-title" tabindex="-1">Pacienti</h2>
+      <form class="wiz-form" data-wiz-patient novalidate>
+        <label class="adm-field">
+          <span>Emri dhe mbiemri</span>
+          <input type="text" name="patientName" autocomplete="off" maxlength="200" required />
+          <small class="adm-error" data-err="patientName" hidden></small>
+        </label>
+        <div class="adm-field">
+          <label for="wiz-phone">Telefoni</label>
+          <div class="wiz-phone">
+            <select name="phoneCountry" data-wiz-country aria-label="Shteti i numrit"></select>
+            <input id="wiz-phone" type="tel" name="patientPhone" inputmode="tel" maxlength="32" required />
+          </div>
+          <small class="adm-error" data-err="patientPhone" hidden></small>
+        </div>
+        <label class="adm-field">
+          <span>Email-i <em>(opsionale)</em></span>
+          <input type="email" name="patientEmail" maxlength="254" />
+          <small class="adm-error" data-err="patientEmail" hidden></small>
+        </label>
+        <label class="adm-field">
+          <span>Gjuha e komunikimit</span>
+          <select name="lang">
+            <option value="sq">Shqip</option>
+            <option value="en">Anglisht</option>
+            <option value="de">Gjermanisht</option>
+          </select>
+        </label>
+        <label class="adm-field">
+          <span>Shënim i brendshëm <em>(opsionale, vetëm për stafin)</em></span>
+          <textarea name="staffNote" rows="3" maxlength="2000"></textarea>
+        </label>
+      </form>
+    </section>
+  )}
+
+  <section class="wiz-step" data-step="review" hidden>
+    <h2 class="wiz-title" tabindex="-1">{reschedule ? 'Konfirmo zhvendosjen' : 'Kontrollo dhe krijo'}</h2>
+    <dl class="wiz-summary" data-wiz-summary></dl>
+    <div class="wiz-override" data-wiz-override hidden>
+      <p class="label-sm">Jashtë disponueshmërisë normale</p>
+      <ul data-wiz-issues></ul>
+      <label class="adm-check">
+        <input type="checkbox" data-wiz-override-check />
+        <span>E kuptoj dhe dëshiroj ta caktoj terminin në këtë kohë.</span>
+      </label>
+    </div>
+  </section>
+
+  <div class="wiz-actions" data-wiz-actions>
+    <button type="button" class="btn btn--ghost btn--sm" data-wiz-back>Kthehu</button>
+    <button type="button" class="btn btn--primary btn--sm" data-wiz-next>Vazhdo</button>
+  </div>
+
+  <script type="application/json" data-wiz-boot set:html={data} />
+</div>
+
+<script>
+  import { startWizard } from '../../scripts/admin-wizard';
+  const root = document.querySelector<HTMLElement>('[data-wizard]');
+  if (root) startWizard(root);
+</script>
+
+<style is:global>
+  .wiz {
+    max-width: 720px;
+    display: grid;
+    gap: 18px;
+  }
+  .wiz-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    font-size: var(--fs-label);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted-light);
+    counter-reset: wiz;
+  }
+  .wiz-steps li {
+    counter-increment: wiz;
+  }
+  .wiz-steps li::before {
+    content: counter(wiz) '. ';
+  }
+  .wiz-steps li[aria-current='step'] {
+    color: var(--crimson);
+  }
+  .wiz-steps li.is-done {
+    color: var(--ink);
+  }
+  .wiz-step[hidden] {
+    display: none;
+  }
+  .wiz-step {
+    display: grid;
+    gap: 12px;
+  }
+  .wiz-title {
+    font-size: 1.25rem;
+    font-weight: 400;
+    outline: none;
+  }
+  .wiz-date {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .adm .wiz-date input {
+    width: auto;
+    flex: 0 1 200px;
+  }
+  .wiz-arrow {
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--line);
+    background: #fff;
+    font-size: 1.25rem;
+  }
+  .wiz-day-label::first-letter {
+    text-transform: uppercase;
+  }
+  .wiz-day-label {
+    font-size: 1.0625rem;
+  }
+  .wiz-sub {
+    margin-top: 6px;
+  }
+  .wiz-outside {
+    display: grid;
+    gap: 10px;
+  }
+  .wiz-outside summary {
+    cursor: pointer;
+    margin-bottom: 8px;
+  }
+  .wiz-outside[hidden] {
+    display: none;
+  }
+  .wiz-custom {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+  .adm .wiz-custom .adm-field input {
+    width: 150px;
+  }
+  .wiz-picked {
+    padding: 12px 14px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--crimson);
+  }
+  .wiz-picked[hidden] {
+    display: none;
+  }
+  .wiz-picked .issue {
+    display: block;
+    margin-top: 4px;
+    color: #8a5a00;
+    font-size: var(--fs-small);
+  }
+  .wiz-form {
+    display: grid;
+    gap: 14px;
+  }
+  .wiz-phone {
+    display: flex;
+  }
+  .wiz-phone select {
+    width: 150px;
+    flex: none;
+    border-right: 0;
+  }
+  .wiz-summary {
+    display: grid;
+    background: #fff;
+    border: 1px solid var(--line);
+  }
+  .wiz-summary > div {
+    display: grid;
+    grid-template-columns: 10em minmax(0, 1fr);
+    gap: 4px 16px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .wiz-summary > div:last-child {
+    border-bottom: 0;
+  }
+  .wiz-summary dt {
+    font-size: var(--fs-label);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-top: 3px;
+  }
+  .wiz-summary dd::first-letter {
+    text-transform: uppercase;
+  }
+  .wiz-summary .was {
+    color: var(--muted);
+    text-decoration: line-through;
+    margin-right: 8px;
+  }
+  .wiz-override {
+    display: grid;
+    gap: 10px;
+    padding: 14px 16px;
+    border-left: 3px solid #8a5a00;
+    background: #fbf6ec;
+  }
+  .wiz-override[hidden] {
+    display: none;
+  }
+  .wiz-override ul {
+    display: grid;
+    gap: 4px;
+    list-style: disc;
+    padding-left: 18px;
+  }
+  .wiz-actions {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 0 max(12px, env(safe-area-inset-bottom));
+    background: var(--paper);
+    border-top: 1px solid var(--line);
+  }
+  .wiz-actions [hidden] {
+    display: none;
+  }
+  .wiz-actions [data-wiz-next] {
+    margin-left: auto;
+  }
+  @media (max-width: 560px) {
+    .wiz-summary > div {
+      grid-template-columns: 1fr;
+    }
+    .wiz-phone select {
+      width: 112px;
+    }
+    .wiz-actions .btn {
+      flex: 1;
+    }
+  }
+</style>

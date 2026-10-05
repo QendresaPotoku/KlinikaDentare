@@ -1,0 +1,186 @@
+---
+/** Online booking settings. Changing them never modifies existing appointments. */
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getSql } from '../../server/db/client.ts';
+import { saveSettings } from '../../server/admin/config.ts';
+import { bool, emptyState, stateFromError, str, versionOf } from '../../server/admin/forms.ts';
+import { loadSettings } from '../../server/booking/repository.ts';
+
+export const prerender = false;
+
+const sql = getSql();
+let state = emptyState();
+let posted: FormData | null = null;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  posted = form;
+  try {
+    await saveSettings(sql, {
+      version: versionOf(form),
+      onlineEnabled: bool(form, 'onlineEnabled'),
+      disabledMessageSq: str(form, 'disabledMessageSq'),
+      disabledMessageEn: str(form, 'disabledMessageEn'),
+      disabledMessageDe: str(form, 'disabledMessageDe'),
+      bookingWindowDays: str(form, 'bookingWindowDays'),
+      minNoticeMinutes: str(form, 'minNoticeMinutes'),
+      cancelDeadlineHours: str(form, 'cancelDeadlineHours'),
+      slotStepMinutes: str(form, 'slotStepMinutes'),
+      emailRequired: bool(form, 'emailRequired'),
+      clinicNotifyEmail: str(form, 'clinicNotifyEmail'),
+    }, Astro.locals.staff!.id);
+    return Astro.redirect('/admin/settings/?done=saved', 303);
+  } catch (err) {
+    state = stateFromError(err, 'settings');
+    if (state.stale) posted = null;
+    Astro.response.status = 409;
+  }
+}
+
+const s = await loadSettings(sql);
+const [{ updatedAt }] = await sql<{ updatedAt: Date }[]>`SELECT updated_at FROM settings WHERE id = 1`;
+const [{ bookable }] = await sql<{ bookable: number }[]>`
+  SELECT count(*)::int AS bookable FROM doctors d
+  WHERE d.active AND d.accepts_online
+    AND EXISTS (SELECT 1 FROM weekly_schedules w WHERE w.doctor_id = d.id)
+    AND EXISTS (SELECT 1 FROM doctor_services ds JOIN services sv ON sv.id = ds.service_id WHERE ds.doctor_id = d.id AND sv.active AND sv.online_visible)`;
+
+const v = posted
+  ? {
+      onlineEnabled: bool(posted, 'onlineEnabled'),
+      disabledMessageSq: str(posted, 'disabledMessageSq'),
+      disabledMessageEn: str(posted, 'disabledMessageEn'),
+      disabledMessageDe: str(posted, 'disabledMessageDe'),
+      bookingWindowDays: str(posted, 'bookingWindowDays'),
+      minNoticeMinutes: Number(str(posted, 'minNoticeMinutes')),
+      cancelDeadlineHours: Number(str(posted, 'cancelDeadlineHours')),
+      slotStepMinutes: Number(str(posted, 'slotStepMinutes')),
+      emailRequired: bool(posted, 'emailRequired'),
+      clinicNotifyEmail: str(posted, 'clinicNotifyEmail'),
+    }
+  : {
+      onlineEnabled: s.onlineEnabled,
+      disabledMessageSq: s.disabledMessage.sq,
+      disabledMessageEn: s.disabledMessage.en,
+      disabledMessageDe: s.disabledMessage.de,
+      bookingWindowDays: String(s.bookingWindowDays),
+      minNoticeMinutes: s.minNoticeMinutes,
+      cancelDeadlineHours: s.cancelDeadlineHours,
+      slotStepMinutes: s.slotStepMinutes,
+      emailRequired: s.emailRequired,
+      clinicNotifyEmail: s.clinicNotifyEmail ?? '',
+    };
+
+const notice = [
+  [0, 'Pa kufizim (deri në çastin e fundit)'],
+  [30, '30 minuta'],
+  [60, '1 orë'],
+  [120, '2 orë'],
+  [180, '3 orë'],
+  [240, '4 orë'],
+  [360, '6 orë'],
+  [720, '12 orë'],
+  [1440, '1 ditë'],
+  [2880, '2 ditë'],
+] as const;
+const deadlines = [
+  [0, 'Deri në fillim të terminit'],
+  [2, '2 orë para'],
+  [6, '6 orë para'],
+  [12, '12 orë para'],
+  [24, '24 orë para'],
+  [48, '48 orë para'],
+  [72, '3 ditë para'],
+] as const;
+const withCurrent = <T extends readonly (readonly [number, string])[]>(opts: T, current: number, unit: string) =>
+  opts.some(([n]) => n === current) ? [...opts] : [...opts, [current, `${current} ${unit}`] as const].sort((a, b) => a[0] - b[0]);
+const f = state.fields;
+---
+
+<AdminLayout title="Rezervimi online" active="settings">
+  <div class="cfg cfg-stack">
+    <header class="cfg-head">
+      <div>
+        <h1 class="adm-title">Rezervimi online</h1>
+        <p class="muted small">Rregullat për rezervimet nga faqja e internetit. Ndryshimet vlejnë për rezervimet e reja; terminet ekzistuese nuk preken.</p>
+      </div>
+    </header>
+
+    {Astro.url.searchParams.get('done') === 'saved' && <p class="adm-notice adm-notice--ok" role="status">Konfigurimet u ruajtën.</p>}
+    {state.message && <p class={`adm-notice ${state.stale ? 'adm-notice--quiet' : ''}`} role="alert">{state.message}</p>}
+    {v.onlineEnabled && bookable === 0 && (
+      <p class="adm-notice adm-notice--quiet">
+        Rezervimi online është i ndezur, por asnjë dentist nuk ka ende orar pune dhe shërbime online. Pacientët do të shohin mesazhin e kontaktit
+        ose nuk do të gjejnë orare të lira.
+      </p>
+    )}
+
+    <form class="cfg-stack" method="post">
+      <input type="hidden" name="version" value={updatedAt.getTime()} />
+
+      <section class="adm-panel cfg-form">
+        <label class="toggle">
+          <input type="checkbox" name="onlineEnabled" checked={v.onlineEnabled} />
+          <span><strong>Rezervimi online është i ndezur</strong><small>Kur është i fikur, pacientët shohin mesazhin më poshtë dhe butonat për telefon/WhatsApp.</small></span>
+        </label>
+        <div class="adm-field">
+          <span>Mesazhi kur rezervimi online është i fikur</span>
+          <label class="adm-field"><em>Shqip</em><textarea name="disabledMessageSq" rows="2" maxlength="600">{v.disabledMessageSq}</textarea></label>
+          {f.disabledMessageSq && <small class="adm-error">{f.disabledMessageSq}</small>}
+          <label class="adm-field"><em>Anglisht</em><textarea name="disabledMessageEn" rows="2" maxlength="600">{v.disabledMessageEn}</textarea></label>
+          {f.disabledMessageEn && <small class="adm-error">{f.disabledMessageEn}</small>}
+          <label class="adm-field"><em>Gjermanisht</em><textarea name="disabledMessageDe" rows="2" maxlength="600">{v.disabledMessageDe}</textarea></label>
+          {f.disabledMessageDe && <small class="adm-error">{f.disabledMessageDe}</small>}
+        </div>
+      </section>
+
+      <section class="adm-panel cfg-form">
+        <h2 class="cfg-section-title">Kur mund të rezervojnë pacientët</h2>
+        <label class="adm-field">
+          <span>Sa ditë përpara</span>
+          <input type="number" name="bookingWindowDays" min="1" max="365" required value={v.bookingWindowDays} />
+          <small class="cfg-help">P.sh. 90: pacientët shohin orare të lira deri në 90 ditë nga sot.</small>
+          {f.bookingWindowDays && <small class="adm-error">{f.bookingWindowDays}</small>}
+        </label>
+        <label class="adm-field">
+          <span>Njoftimi minimal</span>
+          <select name="minNoticeMinutes">
+            {withCurrent(notice, v.minNoticeMinutes, 'minuta').map(([n, label]) => <option value={n} selected={n === v.minNoticeMinutes}>{label}</option>)}
+          </select>
+          <small class="cfg-help">Sa kohë para terminit duhet bërë rezervimi online. P.sh. me 2 orë, në 10:00 nuk mund të rezervohet ora 11:00.</small>
+          {f.minNoticeMinutes && <small class="adm-error">{f.minNoticeMinutes}</small>}
+        </label>
+        <label class="adm-field">
+          <span>Oraret ofrohen çdo</span>
+          <select name="slotStepMinutes">
+            {[5, 10, 15, 20, 30, 60].map((n) => <option value={n} selected={n === v.slotStepMinutes}>{n === 60 ? '1 orë' : `${n} minuta`}</option>)}
+          </select>
+          <small class="cfg-help">Me 15 minuta pacientët shohin 08:00, 08:15, 08:30…; me 30 minuta vetëm 08:00, 08:30…</small>
+        </label>
+      </section>
+
+      <section class="adm-panel cfg-form">
+        <h2 class="cfg-section-title">Anulimi dhe kontakti</h2>
+        <label class="adm-field">
+          <span>Pacientët mund ta anulojnë online</span>
+          <select name="cancelDeadlineHours">
+            {withCurrent(deadlines, v.cancelDeadlineHours, 'orë para').map(([n, label]) => <option value={n} selected={n === v.cancelDeadlineHours}>{label}</option>)}
+          </select>
+          <small class="cfg-help">Pas këtij afati, linku i anulimit u kërkon pacientëve të telefonojnë klinikën.</small>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" name="emailRequired" checked={v.emailRequired} />
+          <span><strong>Email-i është i detyrueshëm</strong><small>Pacientët nuk marrin email: konfirmimi dhe kujtesa dërgohen me SMS. Aktivizojeni vetëm nëse klinika dëshiron email-in si kontakt shtesë.</small></span>
+        </label>
+        <label class="adm-field">
+          <span>Email-i i klinikës për njoftime <em>(opsionale)</em></span>
+          <input type="email" name="clinicNotifyEmail" maxlength="254" value={v.clinicNotifyEmail} placeholder="klinika@example.com" />
+          <small class="cfg-help">Këtu do të dërgohet njoftim për çdo rezervim të ri online.</small>
+          {f.clinicNotifyEmail && <small class="adm-error">{f.clinicNotifyEmail}</small>}
+        </label>
+      </section>
+
+      <div class="cfg-actions"><button class="btn btn--primary btn--sm" type="submit">Ruaj konfigurimet</button></div>
+    </form>
+  </div>
+</AdminLayout>

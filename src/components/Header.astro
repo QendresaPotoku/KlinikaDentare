@@ -175,18 +175,22 @@ const currentState = (href: string) =>
   .brand-text {
     display: flex;
     flex-direction: column;
+    gap: 2px;
     line-height: 1.15;
     text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 0.12em;
+    font-family: 'Cormorant Garamond', Garamond, 'Times New Roman', serif;
     white-space: nowrap;
   }
   .brand-top {
-    font-weight: 600;
-    letter-spacing: 0.14em;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    -webkit-text-stroke: 0.35px currentColor;
   }
   .brand-bottom {
-    font-weight: 400;
+    font-size: 1.0625rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
     opacity: 0.85;
   }
 
@@ -375,8 +379,11 @@ const currentState = (href: string) =>
     }
   }
   @media (max-width: 420px) {
-    .brand-text {
+    .brand-top {
       font-size: 0.625rem;
+    }
+    .brand-bottom {
+      font-size: 0.8125rem;
     }
     .brand :global(.brand-mark) {
       width: 32px;

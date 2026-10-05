@@ -1,0 +1,32 @@
+# Local development database only (production uses a managed PostgreSQL 15+).
+# Start: npm run db:up   Stop: docker compose down   (data is kept in the "pgdata" volume)
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: klinika
+      POSTGRES_PASSWORD: klinika
+      POSTGRES_DB: klinika
+    ports:
+      - '54329:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Creates the separate klinika_test database used by `npm test`.
+      - ./db/docker-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U klinika -d klinika']
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  # Local test mail server (development only): catches every email so nothing reaches real inboxes.
+  # Start: docker compose --profile mail up -d mail   Inbox: http://localhost:8025   SMTP: localhost:1025
+  mail:
+    image: axllent/mailpit:latest
+    profiles: ['mail']
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+
+volumes:
+  pgdata:

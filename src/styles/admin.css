@@ -1,0 +1,691 @@
+/* ==========================================================================
+   Staff panel. Built on the site palette (global.css): paper, ink, crimson, quiet lines.
+   Dense enough for daily use; no dashboard decoration.
+   ========================================================================== */
+
+.adm {
+  --adm-bar-h: 60px;
+  --adm-nav-h: 44px;
+  --adm-top: calc(var(--adm-bar-h) + var(--adm-nav-h));
+  --hour: 84px; /* calendar: height of one hour */
+  --ok: #2f6b45;
+  background: var(--paper);
+  min-height: 100dvh;
+}
+.adm :focus-visible {
+  outline: 2px solid var(--crimson);
+  outline-offset: 2px;
+}
+.adm .btn--sm {
+  min-height: 42px;
+  padding: 0 18px;
+  gap: 10px;
+  font-size: 0.875rem;
+}
+.adm .btn--danger {
+  --btn-bg: transparent;
+  --btn-fg: var(--crimson);
+  --btn-bd: var(--crimson);
+  --btn-fill: var(--crimson);
+}
+.adm .btn--danger:hover {
+  color: #fff;
+}
+.adm .btn[disabled] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.adm-link {
+  color: var(--ink);
+  font-size: 0.875rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--line);
+}
+.adm-link:hover {
+  text-decoration-color: currentColor;
+}
+.adm .muted {
+  color: var(--muted);
+}
+.adm .small {
+  font-size: var(--fs-small);
+}
+.adm .label-sm {
+  font-size: var(--fs-label);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.adm .tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Top bar ---------- */
+.adm-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  height: var(--adm-bar-h);
+  padding: 0 clamp(16px, 3vw, 32px);
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+}
+.adm-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.adm-mark {
+  width: 30px;
+  height: 28px;
+  color: var(--crimson);
+}
+.adm-brand-text {
+  font-size: var(--fs-label);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.adm-brand-text span {
+  color: var(--muted);
+}
+.adm-nav {
+  position: sticky;
+  top: var(--adm-bar-h);
+  z-index: 19;
+  display: flex;
+  gap: 4px 22px;
+  padding: 0 clamp(16px, 3vw, 32px);
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.875rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.adm-nav::-webkit-scrollbar {
+  display: none;
+}
+.adm-nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 0 10px;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  color: var(--ink-soft);
+}
+.adm-nav a:hover {
+  color: var(--ink);
+}
+.adm-nav a[aria-current='page'] {
+  border-color: var(--crimson);
+  color: var(--ink);
+}
+.adm-badge {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--crimson);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 20px;
+  text-align: center;
+}
+.adm-bar-end {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-left: auto;
+}
+.adm-user {
+  font-size: 0.875rem;
+  color: var(--muted);
+  max-width: 14em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.adm-main {
+  max-width: 1440px;
+  padding: clamp(16px, 2.4vw, 28px) clamp(16px, 3vw, 32px) 64px;
+}
+
+/* ---------- Messages ---------- */
+.adm-notice {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-left: 3px solid var(--crimson);
+  background: var(--blush);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+.adm-notice--ok {
+  border-color: var(--ok);
+  background: #edf4ef;
+}
+.adm-notice--quiet {
+  border-color: var(--muted-light);
+  background: var(--stone);
+}
+.adm-notice[hidden] {
+  display: none;
+}
+
+/* ---------- Status chips ---------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border: 1px solid var(--line);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  background: #fff;
+}
+.chip::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.chip--scheduled {
+  color: var(--crimson);
+}
+.chip--completed {
+  color: var(--ok);
+}
+.chip--no_show {
+  color: #8a5a00;
+}
+.chip--cancelled {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.chip--plain::before {
+  display: none;
+}
+
+/* ---------- Forms ---------- */
+.adm-field {
+  display: grid;
+  gap: 7px;
+}
+.adm-field > span,
+.adm-field > label {
+  font-size: var(--fs-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.adm-field em {
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted-light);
+}
+.adm input[type='text'],
+.adm input[type='email'],
+.adm input[type='tel'],
+.adm input[type='password'],
+.adm input[type='date'],
+.adm input[type='number'],
+.adm input[type='time'],
+.adm select,
+.adm textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  font-size: 1rem;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 0;
+}
+.adm textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+.adm input:focus,
+.adm select:focus,
+.adm textarea:focus {
+  outline: none;
+  border-color: var(--crimson);
+}
+.adm [aria-invalid='true'] {
+  border-color: var(--crimson);
+}
+.adm-check {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 10px;
+  align-items: start;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  cursor: pointer;
+}
+.adm-check input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--crimson);
+}
+.adm-error {
+  color: var(--crimson);
+  font-size: 0.8125rem;
+}
+.adm-error[hidden] {
+  display: none;
+}
+
+/* ---------- Generic panel ---------- */
+.adm-panel {
+  background: #fff;
+  border: 1px solid var(--line);
+  padding: clamp(16px, 2.2vw, 26px);
+}
+.adm-title {
+  font-size: clamp(1.25rem, 2vw, 1.625rem);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+/* ---------- Choice rows and time buttons (wizard) ---------- */
+.adm-choices {
+  display: grid;
+  gap: 8px;
+}
+.adm-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  min-height: 54px;
+  padding: 12px 16px;
+  background: #fff;
+  border: 1px solid var(--line);
+  text-align: left;
+  font-size: 1rem;
+}
+.adm-choice:hover {
+  border-color: var(--ink);
+}
+.adm-choice[aria-pressed='true'] {
+  border-color: var(--crimson);
+  box-shadow: inset 3px 0 0 var(--crimson);
+}
+.adm-choice-meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.adm-times {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 6px;
+}
+.adm-time {
+  min-height: 44px;
+  background: #fff;
+  border: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+.adm-time:hover {
+  border-color: var(--crimson);
+}
+.adm-time[aria-pressed='true'] {
+  background: var(--crimson);
+  border-color: var(--crimson);
+  color: #fff;
+}
+.adm-time--outside {
+  background: var(--stone);
+  color: var(--muted);
+  border-style: dashed;
+}
+
+@media (max-width: 760px) {
+  .adm-bar {
+    gap: 12px;
+  }
+  .adm-brand-text,
+  .adm-user {
+    display: none;
+  }
+  .adm-nav {
+    gap: 18px;
+  }
+  .adm .btn--sm {
+    padding: 0 14px;
+  }
+}
+
+.adm .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Configuration screens ---------- */
+.cfg {
+  max-width: 920px;
+}
+.cfg-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 20px;
+  margin-bottom: 18px;
+}
+.cfg-head p {
+  margin-top: 6px;
+  max-width: 44em;
+  line-height: 1.5;
+}
+.cfg-back {
+  display: inline-block;
+  margin-bottom: 12px;
+}
+.cfg-stack {
+  display: grid;
+  gap: 16px;
+}
+.cfg-section-title {
+  font-size: 1.0625rem;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.cfg-help {
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+.cfg-form {
+  display: grid;
+  gap: 16px;
+}
+.cfg-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+.cfg-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.cfg-list {
+  display: grid;
+  gap: 8px;
+}
+.cfg-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 16px;
+  align-items: center;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+a.cfg-item:hover {
+  border-color: var(--ink);
+}
+.cfg-item-title {
+  font-weight: 500;
+}
+.cfg-item-sub {
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+.cfg-item.is-off {
+  background: var(--stone);
+}
+.cfg-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.chip--ok {
+  color: var(--ok);
+}
+.chip--off {
+  color: var(--muted);
+}
+.chip--warn {
+  color: #8a5a00;
+}
+.toggle {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 12px;
+  align-items: start;
+  cursor: pointer;
+}
+.toggle input {
+  appearance: none;
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  background: var(--sand);
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin: 0;
+}
+.toggle input::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+  transition: transform 0.2s;
+}
+.toggle input:checked {
+  background: var(--crimson);
+}
+.toggle input:checked::after {
+  transform: translateX(18px);
+}
+.toggle strong {
+  display: block;
+  font-weight: 500;
+}
+.toggle span {
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+.toggle small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+.checks {
+  display: grid;
+  gap: 8px;
+}
+.checks .adm-check {
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+.seg-radio {
+  display: inline-flex;
+  flex-wrap: wrap;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+.seg-radio label {
+  position: relative;
+  padding: 10px 16px;
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+.seg-radio input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.seg-radio label:has(input:checked) {
+  background: var(--ink);
+  color: var(--paper);
+}
+.seg-radio label:has(input:focus-visible) {
+  outline: 2px solid var(--crimson);
+}
+
+/* Conflict warning */
+.conflicts {
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px;
+  background: #fbf6ec;
+  border-left: 3px solid #8a5a00;
+}
+.conflicts-title {
+  font-weight: 500;
+}
+.conflict {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid rgb(138 90 0 / 0.2);
+}
+.conflict a {
+  font-weight: 500;
+}
+.conflict-reason {
+  color: #8a5a00;
+  font-size: 0.875rem;
+}
+
+/* Schedule / periods editor */
+.sched {
+  display: grid;
+  gap: 8px;
+}
+.sched-day {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  gap: 10px 16px;
+  align-items: start;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+.sched-day.is-off {
+  background: var(--stone);
+}
+.sched-name {
+  display: grid;
+  gap: 6px;
+  font-weight: 500;
+  padding-top: 8px;
+}
+.sched-name .adm-check {
+  font-weight: 400;
+  font-size: 0.875rem;
+}
+.sched-periods {
+  display: grid;
+  gap: 8px;
+}
+.period {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.adm .period input.time-field {
+  width: 84px;
+  min-height: 42px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.date-label {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+.date-label::first-letter {
+  text-transform: uppercase;
+}
+.period {
+  flex-wrap: nowrap;
+}
+.period-dash {
+  color: var(--muted);
+}
+.period-remove {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--muted);
+  font-size: 1.125rem;
+}
+.period-remove:hover {
+  color: var(--crimson);
+  border-color: var(--crimson);
+}
+.sched-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 0.875rem;
+}
+.sched-off-label {
+  color: var(--muted);
+  padding-top: 8px;
+}
+
+@media (max-width: 600px) {
+  .sched-day {
+    grid-template-columns: 1fr;
+  }
+  .sched-name {
+    padding-top: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .cfg-item {
+    grid-template-columns: 1fr;
+  }
+  .cfg-chips {
+    justify-content: flex-start;
+  }
+}
+
+.adm-attention {
+  display: block;
+}
+.adm-attention:hover {
+  background: #f3dde2;
+}

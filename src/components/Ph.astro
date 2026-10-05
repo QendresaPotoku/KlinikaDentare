@@ -2,6 +2,8 @@
 // Renders copy that may contain [[placeholders]] (see ph() in src/i18n).
 import { ph, type Lang } from '../i18n';
 interface Props { text: string; lang: Lang; as?: string; class?: string; [key: string]: unknown }
-const { text, lang, as: Tag = 'span', class: className, ...rest } = Astro.props;
+const { text, lang, as = 'span', class: className, ...rest } = Astro.props;
+// Dynamic tag name (span, p, h2, …); typed as a plain HTML element for Astro's checker.
+const Tag = as as 'span';
 ---
 <Tag class={className} {...rest} set:html={ph(text, lang)} />

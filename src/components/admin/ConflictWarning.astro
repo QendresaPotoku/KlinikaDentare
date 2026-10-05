@@ -1,0 +1,41 @@
+---
+/**
+ * Shown inside a configuration form when saving would put existing appointments in conflict.
+ * Lists each appointment with the reason; the form can be submitted again only with the checkbox,
+ * and carries the acknowledged appointment ids (the server re-checks them).
+ */
+import type { AttentionItem } from '../../server/admin/attention.ts';
+import { clinicDate, clinicTime, formatDateLong } from '../../admin/strings.ts';
+
+interface Props {
+  conflicts: AttentionItem[];
+  /** e.g. "2 existing appointments will be outside Dr. Petriti's new working hours." */
+  title: string;
+}
+const { conflicts, title } = Astro.props;
+---
+
+{conflicts.length > 0 && (
+  <div class="conflicts" role="alert">
+    <p class="conflicts-title">{title}</p>
+    <p class="cfg-help">
+      Terminet nuk do të anulohen dhe nuk do të zhvendosen. Pas ruajtjes do të shfaqen te “Kërkojnë vëmendje”, që t’i zgjidhni një nga një.
+    </p>
+    <div class="cfg-list">
+      {conflicts.map((c) => (
+        <div class="conflict">
+          <a class="adm-link" href={`/admin/appointments/${c.id}/`} target="_blank" rel="noopener">{c.patientName}</a>
+          <span class="small">
+            {formatDateLong(clinicDate(c.startsAt))}, {clinicTime(c.startsAt)} · {c.doctorName} · {c.serviceName}
+          </span>
+          {c.reasons.map((r) => <span class="conflict-reason">{r.text}</span>)}
+        </div>
+      ))}
+    </div>
+    {conflicts.map((c) => <input type="hidden" name="ack" value={c.id} />)}
+    <label class="adm-check">
+      <input type="checkbox" name="ackConfirm" value="yes" required />
+      <span>E kuptoj. Ruaj ndryshimin; terminet mbeten siç janë.</span>
+    </label>
+  </div>
+)}

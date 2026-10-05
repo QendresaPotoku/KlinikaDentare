@@ -2,3 +2,8 @@ node_modules/
 dist/
 .astro/
 src/assets/gifs/
+
+# Local environment (secrets)
+.env
+.env.*
+!.env.example

@@ -1,0 +1,157 @@
+---
+/** Create (/admin/services/new/) or edit a service. */
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import ConflictWarning from '../../../components/admin/ConflictWarning.astro';
+import { getSql } from '../../../server/db/client.ts';
+import { deleteService, saveService } from '../../../server/admin/config.ts';
+import { acknowledgedOf, bool, countLabel, emptyState, list, stateFromError, str, versionOf } from '../../../server/admin/forms.ts';
+
+export const prerender = false;
+
+const param = Astro.params.id ?? '';
+const isNew = param === 'new';
+if (!isNew && !/^[0-9a-f-]{36}$/i.test(param)) return new Response(null, { status: 404 });
+const sql = getSql();
+let state = emptyState();
+let posted: FormData | null = null;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  posted = form;
+  try {
+    if (str(form, 'intent') === 'delete') {
+      await deleteService(sql, param);
+      return Astro.redirect('/admin/services/?done=deleted', 303);
+    }
+    const { id } = await saveService(sql, {
+      serviceId: isNew ? undefined : param,
+      version: versionOf(form),
+      nameSq: str(form, 'nameSq'),
+      nameEn: str(form, 'nameEn'),
+      nameDe: str(form, 'nameDe'),
+      durationMin: str(form, 'durationMin'),
+      active: bool(form, 'active'),
+      onlineVisible: bool(form, 'onlineVisible'),
+      doctorIds: list(form, 'doctorIds'),
+    }, { acknowledged: acknowledgedOf(form) });
+    return Astro.redirect(`/admin/services/${id}/?done=saved`, 303);
+  } catch (err) {
+    state = stateFromError(err, 'service');
+    if (state.stale) posted = null;
+    Astro.response.status = 409;
+  }
+}
+
+const [service] = isNew
+  ? []
+  : await sql<{ nameSq: string; nameEn: string | null; nameDe: string | null; durationMin: number; active: boolean; onlineVisible: boolean; updatedAt: Date; appointmentCount: number }[]>`
+      SELECT name_sq, name_en, name_de, duration_min, active, online_visible, updated_at,
+             (SELECT count(*)::int FROM appointments a WHERE a.service_id = services.id) AS appointment_count
+      FROM services WHERE id = ${param}`;
+if (!isNew && !service) return Astro.redirect('/admin/services/', 303);
+
+const doctors = await sql<{ id: string; name: string; active: boolean; assigned: boolean }[]>`
+  SELECT d.id, d.name, d.active,
+         ${isNew ? false : true} AND EXISTS (SELECT 1 FROM doctor_services ds WHERE ds.doctor_id = d.id AND ds.service_id = ${isNew ? null : param}::uuid) AS assigned
+  FROM doctors d WHERE d.active OR EXISTS (SELECT 1 FROM doctor_services ds WHERE ds.doctor_id = d.id AND ds.service_id = ${isNew ? null : param}::uuid)
+  ORDER BY d.sort_order, d.name`;
+
+const v = posted
+  ? {
+      nameSq: str(posted, 'nameSq'),
+      nameEn: str(posted, 'nameEn'),
+      nameDe: str(posted, 'nameDe'),
+      durationMin: str(posted, 'durationMin'),
+      active: bool(posted, 'active'),
+      onlineVisible: bool(posted, 'onlineVisible'),
+      doctorIds: list(posted, 'doctorIds'),
+    }
+  : {
+      nameSq: service?.nameSq ?? '',
+      nameEn: service?.nameEn ?? '',
+      nameDe: service?.nameDe ?? '',
+      durationMin: String(service?.durationMin ?? 30),
+      active: service?.active ?? true,
+      onlineVisible: service?.onlineVisible ?? false,
+      doctorIds: doctors.filter((d) => d.assigned).map((d) => d.id),
+    };
+const done = Astro.url.searchParams.get('done') === 'saved';
+const durations = [10, 15, 20, 30, 45, 60, 75, 90, 120, 150, 180, 240];
+---
+
+<AdminLayout title={isNew ? 'Shërbim i ri' : service!.nameSq} active="services">
+  <div class="cfg cfg-stack">
+    <a class="adm-link cfg-back" href="/admin/services/">← Shërbimet</a>
+    <h1 class="adm-title">{isNew ? 'Shërbim i ri' : service!.nameSq}</h1>
+    {done && <p class="adm-notice adm-notice--ok" role="status">Shërbimi u ruajt.</p>}
+
+    <form class="adm-panel cfg-form" method="post">
+      <input type="hidden" name="intent" value="save" />
+      {service && <input type="hidden" name="version" value={service.updatedAt.getTime()} />}
+      {state.message && <p class={`adm-notice ${state.stale ? 'adm-notice--quiet' : ''}`} role="alert">{state.message}</p>}
+      <ConflictWarning conflicts={state.conflicts} title={`${countLabel(state.conflicts.length, 'termin ekzistues preket', 'termine ekzistuese preken')} nga ky ndryshim.`} />
+
+      <div class="cfg-row">
+        <label class="adm-field">
+          <span>Emri në shqip</span>
+          <input type="text" name="nameSq" required maxlength="120" value={v.nameSq} placeholder="p.sh. Konsultë" />
+          {state.fields.nameSq && <small class="adm-error">{state.fields.nameSq}</small>}
+        </label>
+        <label class="adm-field">
+          <span>Në anglisht <em>(për faqen në anglisht)</em></span>
+          <input type="text" name="nameEn" maxlength="120" value={v.nameEn} placeholder="Consultation" />
+        </label>
+        <label class="adm-field">
+          <span>Në gjermanisht <em>(për faqen në gjermanisht)</em></span>
+          <input type="text" name="nameDe" maxlength="120" value={v.nameDe} placeholder="Beratung" />
+        </label>
+      </div>
+      <p class="cfg-help">Nëse mungon një përkthim, pacientët e asaj gjuhe shohin emrin shqip.</p>
+
+      <label class="adm-field">
+        <span>Kohëzgjatja</span>
+        <select name="durationMin">
+          {[...new Set([...durations, Number(v.durationMin)])].filter((d) => d > 0).sort((a, b) => a - b).map((d) => (
+            <option value={d} selected={Number(v.durationMin) === d}>{d < 60 ? `${d} minuta` : `${Math.floor(d / 60)} orë${d % 60 ? ` ${d % 60} min` : ''} (${d} min)`}</option>
+          ))}
+        </select>
+        {state.fields.durationMin && <small class="adm-error">{state.fields.durationMin}</small>}
+        {!isNew && <small class="cfg-help">Ndryshimi vlen vetëm për terminet e reja; terminet ekzistuese ruajnë kohëzgjatjen e tyre.</small>}
+      </label>
+
+      <label class="toggle">
+        <input type="checkbox" name="active" checked={v.active} />
+        <span><strong>Aktiv</strong><small>Shërbimet joaktive nuk mund të rezervohen. Terminet ekzistuese mbeten.</small></span>
+      </label>
+      <label class="toggle">
+        <input type="checkbox" name="onlineVisible" checked={v.onlineVisible} />
+        <span><strong>Mund të rezervohet online</strong><small>Kur është e fikur, vetëm stafi mund ta caktojë (p.sh. ndërhyrje të gjata).</small></span>
+      </label>
+
+      <div class="adm-field">
+        <span>Dentistët që e ofrojnë</span>
+        <div class="checks">
+          {doctors.map((d) => (
+            <label class="adm-check">
+              <input type="checkbox" name="doctorIds" value={d.id} checked={v.doctorIds.includes(d.id)} />
+              <span>{d.name}{d.active ? '' : <span class="muted small"> · joaktiv</span>}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div class="cfg-actions"><button class="btn btn--primary btn--sm" type="submit">{state.conflicts.length ? 'Konfirmo dhe ruaj' : 'Ruaj'}</button></div>
+    </form>
+
+    {service && service.appointmentCount === 0 && (
+      <form class="adm-panel cfg-form" method="post">
+        <input type="hidden" name="intent" value="delete" />
+        <h2 class="cfg-section-title">Fshi shërbimin</h2>
+        <p class="cfg-help">Ky shërbim nuk është përdorur në asnjë termin, prandaj mund të fshihet.</p>
+        <label class="adm-check"><input type="checkbox" required /><span>Po, fshije</span></label>
+        <div class="cfg-actions"><button class="btn btn--danger btn--sm" type="submit">Fshi</button></div>
+      </form>
+    )}
+    {service && service.appointmentCount > 0 && <p class="cfg-help">Shërbimet me termine në historik nuk fshihen; çaktivizojini nëse nuk ofrohen më.</p>}
+  </div>
+</AdminLayout>

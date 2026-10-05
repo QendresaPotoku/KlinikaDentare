@@ -1,0 +1,48 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { getSql } from '../../../server/db/client.ts';
+
+export const prerender = false;
+
+const services = await getSql()<
+  { id: string; nameSq: string; nameEn: string | null; nameDe: string | null; durationMin: number; active: boolean; onlineVisible: boolean; doctors: string[] }[]
+>`
+  SELECT s.id, s.name_sq, s.name_en, s.name_de, s.duration_min, s.active, s.online_visible,
+         coalesce((SELECT array_agg(d.name ORDER BY d.sort_order) FROM doctor_services ds JOIN doctors d ON d.id = ds.doctor_id WHERE ds.service_id = s.id AND d.active), '{}') AS doctors
+  FROM services s ORDER BY s.active DESC, s.sort_order, s.name_sq`;
+const deleted = Astro.url.searchParams.get('done') === 'deleted';
+---
+
+<AdminLayout title="Shërbimet" active="services">
+  <div class="cfg cfg-stack">
+    <header class="cfg-head">
+      <div>
+        <h1 class="adm-title">Shërbimet</h1>
+        <p class="muted small">Çfarë mund të rezervohet, sa zgjat dhe cili dentist e ofron.</p>
+      </div>
+      <a class="btn btn--primary btn--sm" href="/admin/services/new/">+ Shto shërbim</a>
+    </header>
+    {deleted && <p class="adm-notice adm-notice--ok" role="status">Shërbimi u fshi.</p>}
+    {services.length === 0 && (
+      <p class="adm-notice adm-notice--quiet">Ende nuk ka shërbime. Pa shërbime aktive, rezervimi online tregon mesazhin e kontaktit.</p>
+    )}
+    <div class="cfg-list">
+      {services.map((s) => (
+        <a class={`cfg-item ${s.active ? '' : 'is-off'}`} href={`/admin/services/${s.id}/`}>
+          <div>
+            <p class="cfg-item-title">{s.nameSq} <span class="muted small">· {s.durationMin} min</span></p>
+            <p class="cfg-item-sub">{s.doctors.length ? s.doctors.join(', ') : 'Asnjë dentist i caktuar'}</p>
+            {(!s.nameEn || !s.nameDe) && s.onlineVisible && (
+              <p class="cfg-item-sub">Mungon përkthimi{!s.nameEn && !s.nameDe ? ' në anglisht dhe gjermanisht' : !s.nameEn ? ' në anglisht' : ' në gjermanisht'} (shfaqet emri shqip).</p>
+            )}
+          </div>
+          <div class="cfg-chips">
+            {!s.active && <span class="chip chip--off">Joaktiv</span>}
+            {s.active && <span class={`chip ${s.onlineVisible ? 'chip--ok' : 'chip--off'}`}>{s.onlineVisible ? 'Online: po' : 'Online: jo'}</span>}
+            {s.active && s.doctors.length === 0 && <span class="chip chip--warn">Pa dentist</span>}
+          </div>
+        </a>
+      ))}
+    </div>
+  </div>
+</AdminLayout>

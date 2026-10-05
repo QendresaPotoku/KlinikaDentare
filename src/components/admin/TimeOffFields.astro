@@ -1,0 +1,86 @@
+---
+/** Fields of the absence form (used for new and edited entries). */
+
+interface Props {
+  doctors: { id: string; name: string }[];
+  values: { doctorId: string; reason: string; mode: 'days' | 'hours'; fromDate: string; toDate: string; date: string; fromTime: string; toTime: string; note: string };
+  fields: Record<string, string>;
+}
+const { doctors, values: v, fields } = Astro.props;
+const reasons = ['vacation', 'sick', 'training', 'personal', 'other'];
+const reasonTitle: Record<string, string> = { vacation: 'Pushim', sick: 'Pushim mjekësor', training: 'Trajnim', personal: 'Personale', other: 'Tjetër' };
+---
+
+<div class="cfg-form" data-timeoff>
+  <label class="adm-field">
+    <span>Dentisti</span>
+    <select name="doctorId" required>
+      <option value="">Zgjidhni…</option>
+      {doctors.map((d) => <option value={d.id} selected={d.id === v.doctorId}>{d.name}</option>)}
+    </select>
+    {fields.doctorId && <small class="adm-error">{fields.doctorId}</small>}
+  </label>
+
+  <div class="adm-field">
+    <span>Arsyeja</span>
+    <div class="seg-radio" role="radiogroup" aria-label="Arsyeja">
+      {reasons.map((r) => (
+        <label><input type="radio" name="reason" value={r} checked={v.reason === r} />{reasonTitle[r]}</label>
+      ))}
+    </div>
+    {fields.reason && <small class="adm-error">{fields.reason}</small>}
+  </div>
+
+  <div class="adm-field">
+    <span>Kohëzgjatja</span>
+    <div class="seg-radio" role="radiogroup" aria-label="Kohëzgjatja">
+      <label><input type="radio" name="mode" value="days" checked={v.mode === 'days'} data-mode />Ditë të plota</label>
+      <label><input type="radio" name="mode" value="hours" checked={v.mode === 'hours'} data-mode />Disa orë të një dite</label>
+    </div>
+  </div>
+
+  <div class="cfg-row" data-mode-days hidden={v.mode !== 'days'}>
+    <label class="adm-field"><span>Nga data</span><input type="date" name="fromDate" value={v.fromDate} /></label>
+    <label class="adm-field"><span>Deri më (përfshirë)</span><input type="date" name="toDate" value={v.toDate} /></label>
+    <p class="cfg-help span-all">Për një ditë të vetme vendosni të njëjtën datë ose lëreni “Deri më” bosh.</p>
+  </div>
+  <div class="cfg-row" data-mode-hours hidden={v.mode !== 'hours'}>
+    <label class="adm-field"><span>Data</span><input type="date" name="date" value={v.date} /></label>
+    <label class="adm-field"><span>Nga ora</span><input type="text" name="fromTime" data-time inputmode="numeric" maxlength="5" placeholder="10:00" value={v.fromTime} /></label>
+    <label class="adm-field"><span>Deri në orën</span><input type="text" name="toTime" data-time inputmode="numeric" maxlength="5" placeholder="12:00" value={v.toTime} /></label>
+  </div>
+  {(fields.dates || fields.periods) && <small class="adm-error">{fields.dates ?? fields.periods}</small>}
+
+  <label class="adm-field">
+    <span>Shënim <em>(opsionale, shfaqet vetëm për stafin)</em></span>
+    <input type="text" name="note" maxlength="500" value={v.note} placeholder="p.sh. Kongres në Vjenë" />
+  </label>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-timeoff]').forEach((root) => {
+    const sync = () => {
+      const mode = root.querySelector<HTMLInputElement>('[data-mode]:checked')?.value ?? 'days';
+      root.querySelector<HTMLElement>('[data-mode-days]')!.hidden = mode !== 'days';
+      root.querySelector<HTMLElement>('[data-mode-hours]')!.hidden = mode !== 'hours';
+    };
+    root.querySelectorAll('[data-mode]').forEach((r) => r.addEventListener('change', sync));
+    // Picking a start date pre-fills the end date (most absences start and end on known days).
+    const from = root.querySelector<HTMLInputElement>('[name=fromDate]')!;
+    const to = root.querySelector<HTMLInputElement>('[name=toDate]')!;
+    from.addEventListener('change', () => {
+      if (!to.value || to.value < from.value) to.value = from.value;
+      to.min = from.value;
+    });
+  });
+</script>
+
+<style>
+  .span-all {
+    grid-column: 1 / -1;
+  }
+  [data-mode-days][hidden],
+  [data-mode-hours][hidden] {
+    display: none;
+  }
+</style>

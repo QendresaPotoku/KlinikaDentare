@@ -1,0 +1,107 @@
+---
+/** Edit a staff account (name, email, active) and set a new password. */
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { getSql } from '../../../server/db/client.ts';
+import { resetStaffPassword, updateStaffUser } from '../../../server/admin/config.ts';
+import { bool, emptyState, stateFromError, str, versionOf, type FormState } from '../../../server/admin/forms.ts';
+import { SESSION_COOKIE } from '../../../server/auth/session.ts';
+
+export const prerender = false;
+
+const id = Astro.params.id ?? '';
+if (!/^[0-9a-f-]{36}$/i.test(id)) return new Response(null, { status: 404 });
+const sql = getSql();
+const me = Astro.locals.staff!;
+const isMe = id === me.id;
+let profileState: FormState = emptyState();
+let passwordState: FormState = emptyState();
+let posted: FormData | null = null;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const intent = str(form, 'intent');
+  try {
+    if (intent === 'profile') {
+      posted = form;
+      await updateStaffUser(sql, { userId: id, version: versionOf(form), name: str(form, 'name'), email: str(form, 'email'), active: isMe ? true : bool(form, 'active') }, me.id);
+      return Astro.redirect(`/admin/staff/${id}/?done=profile`, 303);
+    }
+    if (intent === 'password') {
+      await resetStaffPassword(sql, { userId: id, password: str(form, 'password'), repeat: str(form, 'repeat') }, isMe ? Astro.cookies.get(SESSION_COOKIE)?.value : undefined);
+      return Astro.redirect(`/admin/staff/${id}/?done=password`, 303);
+    }
+  } catch (err) {
+    const state = stateFromError(err, 'staff');
+    if (intent === 'password') passwordState = state;
+    else profileState = state;
+    if (state.stale) posted = null;
+    Astro.response.status = 409;
+  }
+}
+
+const [user] = await sql<{ name: string; email: string; active: boolean; updatedAt: Date }[]>`
+  SELECT name, email, active, updated_at FROM admin_users WHERE id = ${id}`;
+if (!user) return Astro.redirect('/admin/staff/', 303);
+const v = posted ? { name: str(posted, 'name'), email: str(posted, 'email'), active: bool(posted, 'active') } : user;
+const done = Astro.url.searchParams.get('done');
+---
+
+<AdminLayout title={user.name} active="staff">
+  <div class="cfg cfg-stack">
+    <a class="adm-link cfg-back" href="/admin/staff/">← Stafi</a>
+    <h1 class="adm-title">{user.name}{isMe && <span class="muted small"> (ju)</span>}</h1>
+    {done === 'profile' && <p class="adm-notice adm-notice--ok" role="status">Llogaria u ruajt.</p>}
+    {done === 'password' && (
+      <p class="adm-notice adm-notice--ok" role="status">
+        Fjalëkalimi u ndryshua. {isMe ? 'Jeni çkyçur nga pajisjet e tjera.' : 'Personi duhet të kyçet përsëri me fjalëkalimin e ri.'}
+      </p>
+    )}
+
+    <form class="adm-panel cfg-form" method="post">
+      <input type="hidden" name="intent" value="profile" />
+      <input type="hidden" name="version" value={user.updatedAt.getTime()} />
+      {profileState.message && <p class={`adm-notice ${profileState.stale ? 'adm-notice--quiet' : ''}`} role="alert">{profileState.message}</p>}
+      <div class="cfg-row">
+        <label class="adm-field">
+          <span>Emri</span>
+          <input type="text" name="name" required maxlength="120" value={v.name} />
+          {profileState.fields.name && <small class="adm-error">{profileState.fields.name}</small>}
+        </label>
+        <label class="adm-field">
+          <span>Email-i (për hyrje)</span>
+          <input type="email" name="email" required maxlength="254" value={v.email} />
+          {profileState.fields.email && <small class="adm-error">{profileState.fields.email}</small>}
+        </label>
+      </div>
+      {isMe ? (
+        <p class="cfg-help">Nuk mund ta çaktivizoni llogarinë tuaj. Kërkojini një kolegu ta bëjë këtë nëse nevojitet.</p>
+      ) : (
+        <label class="toggle">
+          <input type="checkbox" name="active" checked={v.active} />
+          <span><strong>Llogari aktive</strong><small>Kur çaktivizohet, personi çkyçet menjëherë nga të gjitha pajisjet dhe nuk mund të hyjë më.</small></span>
+        </label>
+      )}
+      <div class="cfg-actions"><button class="btn btn--primary btn--sm" type="submit">Ruaj</button></div>
+    </form>
+
+    <form class="adm-panel cfg-form" method="post" autocomplete="off">
+      <input type="hidden" name="intent" value="password" />
+      <h2 class="cfg-section-title">{isMe ? 'Ndrysho fjalëkalimin tuaj' : 'Vendos fjalëkalim të ri'}</h2>
+      {passwordState.message && <p class="adm-notice" role="alert">{passwordState.message}</p>}
+      <div class="cfg-row">
+        <label class="adm-field">
+          <span>Fjalëkalimi i ri</span>
+          <input type="password" name="password" required minlength="10" autocomplete="new-password" />
+          {passwordState.fields.password && <small class="adm-error">{passwordState.fields.password}</small>}
+        </label>
+        <label class="adm-field">
+          <span>Përsërite</span>
+          <input type="password" name="repeat" required minlength="10" autocomplete="new-password" />
+          {passwordState.fields.repeat && <small class="adm-error">{passwordState.fields.repeat}</small>}
+        </label>
+      </div>
+      <p class="cfg-help">{isMe ? 'Do të çkyçeni nga pajisjet e tjera; kjo pajisje mbetet e kyçur.' : 'Personi çkyçet nga të gjitha pajisjet dhe duhet të hyjë me fjalëkalimin e ri.'}</p>
+      <div class="cfg-actions"><button class="btn btn--ghost btn--sm" type="submit">Ndrysho fjalëkalimin</button></div>
+    </form>
+  </div>
+</AdminLayout>

@@ -14,6 +14,8 @@ import exam from '../assets/photos/exam.jpg';
 import examDark from '../assets/photos/exam-dark.jpg';
 import instrumentsStill from '../assets/photos/instruments-still.jpg';
 import chairWindow from '../assets/photos/chair-window.jpg';
+import alignerHand from '../assets/photos/aligner-hand.jpg';
+import bracesProgressWide from '../assets/photos/braces-progress-wide.jpg';
 
 /**
  * Treatments are grouped in categories (e.g. Dental implants), each with its own
@@ -43,6 +45,8 @@ export interface SubTreatment {
   /** Falls back to the category's images when left out. */
   image?: ImageMetadata;
   detailImage?: ImageMetadata;
+  /** Which part of the hero photo stays in view when the frame crops it (CSS object-position). Defaults to centre. */
+  imageFocus?: string;
   copy: Record<Lang, TreatmentCopy>;
 }
 
@@ -187,6 +191,8 @@ export const treatments: Treatment[] = [
     children: [
       {
         id: 'invisalign',
+        image: alignerHand,
+        imageFocus: '50% 70%',
         copy: {
           sq: { slug: 'invisalign', name: 'Invisalign', summary: 'Mbajtëse transparente, pothuajse të padukshme.' },
           en: { slug: 'invisalign', name: 'Invisalign', summary: 'Clear, almost invisible aligners.' },
@@ -195,6 +201,7 @@ export const treatments: Treatment[] = [
       },
       {
         id: 'braces',
+        image: bracesProgressWide,
         copy: {
           sq: { slug: 'aparatet-fikse', name: 'Aparatet fikse', summary: 'Aparate ortodontike fikse me brackets.' },
           en: { slug: 'braces', name: 'Braces', summary: 'Fixed orthodontic braces with brackets.' },

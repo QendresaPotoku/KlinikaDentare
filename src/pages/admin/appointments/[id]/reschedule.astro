@@ -1,0 +1,85 @@
+---
+import { logError } from '../../../../server/log.ts';
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import AppointmentWizard from '../../../../components/admin/AppointmentWizard.astro';
+import { getSql } from '../../../../server/db/client.ts';
+import { getAppointment } from '../../../../server/booking/appointments.ts';
+import { todayLocal } from '../../../../server/time.ts';
+import { clinicDate, clinicTime, formatDateLong } from '../../../../admin/strings.ts';
+
+export const prerender = false;
+
+const id = Astro.params.id ?? '';
+const sql = getSql();
+let boot: Record<string, unknown> | null = null;
+let problem: string | null = null;
+let a: Awaited<ReturnType<typeof getAppointment>>;
+try {
+  a = /^[0-9a-f-]{36}$/i.test(id) ? await getAppointment(sql, id) : undefined;
+  if (!a) {
+    problem = 'Termini nuk u gjet.';
+    Astro.response.status = 404;
+  } else if (a.status !== 'scheduled') {
+    problem = 'Vetëm terminet e planifikuara mund të zhvendosen.';
+  } else {
+    // Dentists who can take this appointment: active and offering its service.
+    const doctors = await sql`
+      SELECT d.id, d.name, d.accepts_online, EXISTS (SELECT 1 FROM weekly_schedules w WHERE w.doctor_id = d.id) AS has_schedule
+      FROM doctors d JOIN doctor_services ds ON ds.doctor_id = d.id AND ds.service_id = ${a.serviceId}
+      WHERE d.active ORDER BY d.sort_order, d.name
+    `;
+    boot = {
+      mode: 'reschedule',
+      today: todayLocal(Date.now()),
+      doctors,
+      appointment: {
+        id: a.id,
+        version: a.updatedAt.getTime(),
+        serviceId: a.serviceId,
+        serviceName: a.serviceName,
+        doctorId: a.doctorId,
+        doctorName: a.doctorName,
+        startsAt: a.startsAt.toISOString(),
+        endsAt: a.endsAt.toISOString(),
+        patientName: a.patientName,
+      },
+    };
+  }
+} catch (err) {
+  logError('admin/reschedule', err);
+  problem = 'Faqja nuk mund të ngarkohet për momentin. Provoni përsëri pas pak.';
+}
+---
+
+<AdminLayout title="Zhvendos terminin">
+  <a class="adm-link back" href={`/admin/appointments/${id}/`}>← Termini</a>
+  <h1 class="adm-title">Zhvendos terminin</h1>
+  {a && (
+    <p class="current">
+      <span class="label-sm">Aktualisht</span>
+      <span>{formatDateLong(clinicDate(a.startsAt))}, {clinicTime(a.startsAt)} · {a.doctorName}</span>
+      <span class="muted small">{a.patientName} · {a.serviceName}</span>
+    </p>
+  )}
+  {problem && <p class="adm-notice" role="alert">{problem}</p>}
+  {boot && <AppointmentWizard boot={boot} />}
+</AdminLayout>
+
+<style>
+  .back {
+    display: inline-block;
+    margin-bottom: 14px;
+  }
+  .current {
+    display: grid;
+    gap: 4px;
+    max-width: 720px;
+    margin: 14px 0 22px;
+    padding: 14px 16px;
+    background: #fff;
+    border: 1px solid var(--line);
+  }
+  .current span:nth-child(2)::first-letter {
+    text-transform: uppercase;
+  }
+</style>

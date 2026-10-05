@@ -22,6 +22,7 @@ const cat = treatment.copy[lang];
 const c = sub ? sub.copy[lang] : cat;
 const image = sub ? subImage(treatment, sub) : treatment.image;
 const detailImage = sub ? subDetailImage(treatment, sub) : treatment.detailImage;
+const imageFocus = sub?.imageFocus;
 
 const catHref = paths.treatment(lang, cat.slug);
 const subHref = (s: SubTreatment) => paths.subTreatment(lang, cat.slug, s.copy[lang].slug);
@@ -77,7 +78,7 @@ const [firstPara, ...morePara] = body;
       </div>
       <figure class="hero-media media" data-reveal="mask">
         <div data-parallax="6">
-          <Image src={image} alt="" widths={[600, 900, 1200, 1600]} sizes="(max-width: 900px) 100vw, 42vw" loading="eager" />
+          <Image src={image} alt="" style={imageFocus && `object-position: ${imageFocus}`} widths={[600, 900, 1200, 1600]} sizes="(max-width: 900px) 100vw, 42vw" loading="eager" />
         </div>
       </figure>
     </div>

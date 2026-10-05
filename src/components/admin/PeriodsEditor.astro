@@ -1,0 +1,24 @@
+---
+/**
+ * Working-hours editor. mode="week": Monday–Sunday, each day off or with one or more periods
+ * (add/remove, copy a day to other days). mode="day": the periods of a single date.
+ * The value is kept as JSON in a hidden input (`name`), e.g. [{"weekday":1,"periods":[{"start":"08:00","end":"12:00"}]}]
+ * or [{"start":"09:00","end":"13:00"}]. The server validates it again.
+ */
+interface Props {
+  name: string;
+  mode: 'week' | 'day';
+  value: unknown;
+}
+const { name, mode, value } = Astro.props;
+---
+
+<div class="sched" data-periods-editor data-mode={mode}>
+  <input type="hidden" name={name} value={JSON.stringify(value)} data-periods-value />
+  <noscript><p class="adm-notice">Ky redaktor kërkon JavaScript.</p></noscript>
+</div>
+
+<script>
+  import { mountPeriodsEditors } from '../../scripts/admin-periods';
+  mountPeriodsEditors();
+</script>

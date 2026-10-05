@@ -1,0 +1,117 @@
+---
+/** Absences (vacation, sick leave, …): list + add form. */
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import ConflictWarning from '../../../components/admin/ConflictWarning.astro';
+import TimeOffFields from '../../../components/admin/TimeOffFields.astro';
+import { getSql } from '../../../server/db/client.ts';
+import { saveTimeOff } from '../../../server/admin/config.ts';
+import { acknowledgedOf, countLabel, emptyState, stateFromError, str } from '../../../server/admin/forms.ts';
+import { describeTimeOffRange, listTimeOff, reasonTitle } from '../../../server/admin/lists.ts';
+
+export const prerender = false;
+
+const sql = getSql();
+const filter = Astro.url.searchParams.get('doctor');
+const doctorFilter = filter && /^[0-9a-f-]{36}$/i.test(filter) ? filter : null;
+let state = emptyState();
+let values = { doctorId: doctorFilter ?? '', reason: 'vacation', mode: 'days' as 'days' | 'hours', fromDate: '', toDate: '', date: '', fromTime: '', toTime: '', note: '' };
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  values = {
+    doctorId: str(form, 'doctorId'),
+    reason: str(form, 'reason'),
+    mode: str(form, 'mode') === 'hours' ? 'hours' : 'days',
+    fromDate: str(form, 'fromDate'),
+    toDate: str(form, 'toDate'),
+    date: str(form, 'date'),
+    fromTime: str(form, 'fromTime'),
+    toTime: str(form, 'toTime'),
+    note: str(form, 'note'),
+  };
+  try {
+    await saveTimeOff(sql, values, { acknowledged: acknowledgedOf(form) });
+    return Astro.redirect(`/admin/time-off/?done=saved${doctorFilter ? `&doctor=${doctorFilter}` : ''}`, 303);
+  } catch (err) {
+    state = stateFromError(err, 'time-off');
+    Astro.response.status = 409;
+  }
+}
+
+const doctors = await sql<{ id: string; name: string }[]>`SELECT id, name FROM doctors WHERE active ORDER BY sort_order, name`;
+const { upcoming, past } = await listTimeOff(sql, { doctorId: doctorFilter, now: Date.now() });
+const done = Astro.url.searchParams.get('done');
+---
+
+<AdminLayout title="Mungesat" active="time-off">
+  <div class="cfg cfg-stack">
+    <header class="cfg-head">
+      <div>
+        <h1 class="adm-title">Mungesat</h1>
+        <p class="muted small">Pushime, pushim mjekësor, trajnime dhe mungesa të tjera. Gjatë një mungese dentisti nuk ka orare online.</p>
+      </div>
+      <form method="get" class="cfg-actions">
+        <label class="sr-only" for="f-doctor">Dentisti</label>
+        <select id="f-doctor" name="doctor" onchange="this.form.submit()">
+          <option value="">Të gjithë dentistët</option>
+          {doctors.map((d) => <option value={d.id} selected={d.id === doctorFilter}>{d.name}</option>)}
+        </select>
+        <noscript><button class="btn btn--ghost btn--sm">Shfaq</button></noscript>
+      </form>
+    </header>
+
+    {done === 'saved' && <p class="adm-notice adm-notice--ok" role="status">Mungesa u ruajt.</p>}
+    {done === 'deleted' && <p class="adm-notice adm-notice--ok" role="status">Mungesa u fshi.</p>}
+
+    <section class="cfg-stack">
+      <h2 class="cfg-section-title">Të ardhshme</h2>
+      {upcoming.length === 0 && <p class="cfg-help">Nuk ka mungesa të planifikuara.</p>}
+      <div class="cfg-list">
+        {upcoming.map((t) => (
+          <a class="cfg-item" href={`/admin/time-off/${t.id}/`}>
+            <div>
+              <p class="cfg-item-title">{t.doctorName} · {reasonTitle(t.reason)}</p>
+              <p class="cfg-item-sub first-up">{describeTimeOffRange(t)}{t.note ? ` · ${t.note}` : ''}</p>
+            </div>
+            <span class="adm-link">Ndrysho</span>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <form class="adm-panel cfg-form" method="post" id="new">
+      <h2 class="cfg-section-title">Shto mungesë</h2>
+      {state.message && <p class="adm-notice" role="alert">{state.message}</p>}
+      <ConflictWarning
+        conflicts={state.conflicts}
+        title={`${countLabel(state.conflicts.length, 'termin bie', 'termine bien')} ndesh me këtë mungesë.`}
+      />
+      <TimeOffFields doctors={doctors} values={values} fields={state.fields} />
+      <div class="cfg-actions">
+        <button class="btn btn--primary btn--sm" type="submit">{state.conflicts.length ? 'Konfirmo dhe ruaj' : 'Ruaj mungesën'}</button>
+      </div>
+    </form>
+
+    {past.length > 0 && (
+      <details class="cfg-stack">
+        <summary class="adm-link">Mungesat e kaluara ({past.length})</summary>
+        <div class="cfg-list">
+          {past.slice(0, 50).map((t) => (
+            <a class="cfg-item is-off" href={`/admin/time-off/${t.id}/`}>
+              <div>
+                <p class="cfg-item-title">{t.doctorName} · {reasonTitle(t.reason)}</p>
+                <p class="cfg-item-sub first-up">{describeTimeOffRange(t)}</p>
+              </div>
+            </a>
+          ))}
+        </div>
+      </details>
+    )}
+  </div>
+</AdminLayout>
+
+<style>
+  .first-up::first-letter {
+    text-transform: uppercase;
+  }
+</style>

@@ -1,0 +1,79 @@
+---
+/** Fields of the special-day form: whole clinic or one dentist; closed or special hours. */
+import PeriodsEditor from './PeriodsEditor.astro';
+
+interface Props {
+  doctors: { id: string; name: string }[];
+  values: { scope: string; kind: 'closed' | 'custom_hours'; date: string; toDate: string; periods: { start: string; end: string }[]; note: string };
+  fields: Record<string, string>;
+  isNew: boolean;
+}
+const { doctors, values: v, fields, isNew } = Astro.props;
+---
+
+<div class="cfg-form" data-special>
+  <label class="adm-field">
+    <span>Për kë vlen</span>
+    <select name="scope">
+      <option value="clinic" selected={v.scope === 'clinic'}>Gjithë klinika</option>
+      {doctors.map((d) => <option value={d.id} selected={v.scope === d.id}>{d.name}</option>)}
+    </select>
+  </label>
+
+  <div class="adm-field">
+    <span>Çfarë ndodh</span>
+    <div class="seg-radio" role="radiogroup" aria-label="Lloji">
+      <label><input type="radio" name="kind" value="closed" checked={v.kind === 'closed'} data-kind />E mbyllur / ditë e lirë</label>
+      <label><input type="radio" name="kind" value="custom_hours" checked={v.kind === 'custom_hours'} data-kind />Orar i veçantë</label>
+    </div>
+    <small class="cfg-help" data-help-closed hidden={v.kind !== 'closed'}>
+      Për gjithë klinikën: askush nuk punon. Për një dentist: ky dentist nuk punon atë ditë.
+    </small>
+    <small class="cfg-help" data-help-hours hidden={v.kind !== 'custom_hours'}>
+      Për gjithë klinikën: të gjithë punojnë vetëm brenda këtyre orëve. Për një dentist: këto orë zëvendësojnë orarin e zakonshëm të asaj dite,
+      edhe në një ditë kur zakonisht nuk punon (p.sh. një e shtunë ose e diel e jashtëzakonshme).
+    </small>
+  </div>
+
+  <div class="cfg-row">
+    <label class="adm-field"><span>Data</span><input type="date" name="date" required value={v.date} /></label>
+    {isNew && (
+      <label class="adm-field" data-to-date hidden={v.kind !== 'closed'}>
+        <span>Deri më <em>(opsionale, për disa ditë radhazi)</em></span>
+        <input type="date" name="toDate" value={v.toDate} />
+      </label>
+    )}
+  </div>
+  {fields.dates && <small class="adm-error">{fields.dates}</small>}
+
+  <div class="adm-field" data-hours hidden={v.kind !== 'custom_hours'}>
+    <span>Orari i asaj dite</span>
+    <PeriodsEditor name="periods" mode="day" value={v.periods} />
+    {fields.periods && <small class="adm-error">{fields.periods}</small>}
+  </div>
+
+  <label class="adm-field">
+    <span>Shënim <em>(opsionale, p.sh. “Dita e Pavarësisë”)</em></span>
+    <input type="text" name="note" maxlength="500" value={v.note} />
+  </label>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-special]').forEach((root) => {
+    const sync = () => {
+      const kind = root.querySelector<HTMLInputElement>('[data-kind]:checked')?.value ?? 'closed';
+      root.querySelectorAll<HTMLElement>('[data-hours],[data-help-hours]').forEach((e) => (e.hidden = kind !== 'custom_hours'));
+      root.querySelectorAll<HTMLElement>('[data-to-date],[data-help-closed]').forEach((e) => (e.hidden = kind !== 'closed'));
+    };
+    root.querySelectorAll('[data-kind]').forEach((r) => r.addEventListener('change', sync));
+  });
+</script>
+
+<style>
+  [data-hours][hidden],
+  [data-to-date][hidden],
+  [data-help-closed][hidden],
+  [data-help-hours][hidden] {
+    display: none;
+  }
+</style>

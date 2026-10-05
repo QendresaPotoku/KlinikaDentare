@@ -1,0 +1,180 @@
+---
+/**
+ * One dentist: profile (name, active, online), services, weekly schedule. Saves that would put
+ * existing appointments in conflict show the affected appointments and need confirmation.
+ */
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import ConflictWarning from '../../../components/admin/ConflictWarning.astro';
+import PeriodsEditor from '../../../components/admin/PeriodsEditor.astro';
+import { getSql } from '../../../server/db/client.ts';
+import { deleteDoctor, saveWeeklySchedule, updateDoctor, type PeriodInput } from '../../../server/admin/config.ts';
+import { acknowledgedOf, bool, countLabel, emptyState, json, list, stateFromError, str, versionOf, type FormState } from '../../../server/admin/forms.ts';
+import { scheduleToEditor } from '../../../admin/strings.ts';
+
+export const prerender = false;
+
+const id = Astro.params.id ?? '';
+if (!/^[0-9a-f-]{36}$/i.test(id)) return new Response(null, { status: 404 });
+const sql = getSql();
+const self = `/admin/doctors/${id}/`;
+
+let profileState: FormState = emptyState();
+let scheduleState: FormState = emptyState();
+let posted: { intent: string; form: FormData } | null = null;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const intent = str(form, 'intent');
+  posted = { intent, form };
+  const options = { acknowledged: acknowledgedOf(form) };
+  try {
+    if (intent === 'profile') {
+      await updateDoctor(sql, {
+        doctorId: id,
+        version: versionOf(form),
+        name: str(form, 'name'),
+        active: bool(form, 'active'),
+        acceptsOnline: bool(form, 'acceptsOnline'),
+        serviceIds: list(form, 'serviceIds'),
+      }, options);
+      return Astro.redirect(`${self}?done=profile`, 303);
+    }
+    if (intent === 'schedule') {
+      await saveWeeklySchedule(sql, { doctorId: id, version: versionOf(form), days: json<{ weekday: number; periods: PeriodInput[] }[]>(form, 'schedule', []) }, options);
+      return Astro.redirect(`${self}?done=schedule`, 303);
+    }
+    if (intent === 'delete') {
+      await deleteDoctor(sql, id);
+      return Astro.redirect('/admin/doctors/?done=deleted', 303);
+    }
+  } catch (err) {
+    const state = stateFromError(err, 'doctor');
+    if (intent === 'schedule') scheduleState = state;
+    else profileState = state;
+    if (state.stale) posted = null; // show the latest version
+    Astro.response.status = 409;
+  }
+}
+
+const [doctor] = await sql<{ id: string; name: string; active: boolean; acceptsOnline: boolean; updatedAt: Date; appointmentCount: number }[]>`
+  SELECT d.id, d.name, d.active, d.accepts_online, d.updated_at,
+         (SELECT count(*)::int FROM appointments a WHERE a.doctor_id = d.id) AS appointment_count
+  FROM doctors d WHERE d.id = ${id}`;
+if (!doctor) return Astro.redirect('/admin/doctors/', 303);
+
+const services = await sql<{ id: string; name: string; active: boolean; durationMin: number; assigned: boolean }[]>`
+  SELECT s.id, s.name_sq AS name, s.active, s.duration_min,
+         EXISTS (SELECT 1 FROM doctor_services ds WHERE ds.doctor_id = ${id} AND ds.service_id = s.id) AS assigned
+  FROM services s ORDER BY s.active DESC, s.sort_order, s.name_sq`;
+const schedule = await sql<{ weekday: number; startMinute: number; endMinute: number }[]>`
+  SELECT weekday, start_minute, end_minute FROM weekly_schedules WHERE doctor_id = ${id}`;
+
+// Values shown in the forms: what was just posted (after an error / conflict), else what is saved.
+const p = posted?.intent === 'profile' ? posted.form : null;
+const profile = {
+  name: p ? str(p, 'name') : doctor.name,
+  active: p ? bool(p, 'active') : doctor.active,
+  acceptsOnline: p ? bool(p, 'acceptsOnline') : doctor.acceptsOnline,
+  serviceIds: p ? list(p, 'serviceIds') : services.filter((s) => s.assigned).map((s) => s.id),
+};
+const scheduleValue = posted?.intent === 'schedule' ? json(posted.form, 'schedule', []) : scheduleToEditor(schedule);
+
+const done = Astro.url.searchParams.get('done');
+const doneText: Record<string, string> = {
+  created: 'Dentisti u shtua. Vendosni orarin e punës dhe shërbimet.',
+  profile: 'Të dhënat u ruajtën.',
+  schedule: 'Orari u ruajt.',
+};
+const version = doctor.updatedAt.getTime();
+const n = (s: FormState) => s.conflicts.length;
+---
+
+<AdminLayout title={doctor.name} active="doctors">
+  <div class="cfg cfg-stack">
+    <a class="adm-link cfg-back" href="/admin/doctors/">← Dentistët</a>
+    <header class="cfg-head">
+      <div>
+        <h1 class="adm-title">{doctor.name}</h1>
+        <p class="muted small">
+          <a class="adm-link" href={`/admin/time-off/?doctor=${id}`}>Mungesat</a> ·
+          <a class="adm-link" href={`/admin/special-days/?doctor=${id}`}>Ditë të veçanta</a> ·
+          <a class="adm-link" href={`/admin/?view=week&doctor=${id}`}>Kalendari</a>
+        </p>
+      </div>
+      {!doctor.active && <span class="chip chip--off">Joaktiv</span>}
+    </header>
+
+    {done && doneText[done] && <p class="adm-notice adm-notice--ok" role="status">{doneText[done]}</p>}
+
+    <!-- Profile and services -->
+    <form class="adm-panel cfg-form" method="post" action={self}>
+      <input type="hidden" name="intent" value="profile" />
+      <input type="hidden" name="version" value={version} />
+      <h2 class="cfg-section-title">Të dhënat dhe shërbimet</h2>
+      {profileState.message && <p class={`adm-notice ${profileState.stale ? 'adm-notice--quiet' : ''}`} role="alert">{profileState.message}</p>}
+      <ConflictWarning conflicts={profileState.conflicts} title={`${countLabel(n(profileState), 'termin ekzistues preket', 'termine ekzistuese preken')} nga ky ndryshim.`} />
+
+      <label class="adm-field">
+        <span>Emri</span>
+        <input type="text" name="name" required maxlength="120" value={profile.name} />
+        {profileState.fields.name && <small class="adm-error">{profileState.fields.name}</small>}
+      </label>
+      <label class="toggle">
+        <input type="checkbox" name="active" checked={profile.active} />
+        <span><strong>Aktiv</strong><small>Dentistët joaktivë nuk shfaqen për rezervime të reja. Terminet ekzistuese mbeten.</small></span>
+      </label>
+      <label class="toggle">
+        <input type="checkbox" name="acceptsOnline" checked={profile.acceptsOnline} />
+        <span><strong>Pranon rezervime online</strong><small>Kur është e fikur, terminet caktohen vetëm nga stafi.</small></span>
+      </label>
+
+      <div class="adm-field">
+        <span>Shërbimet që ofron</span>
+        {services.length === 0 ? (
+          <p class="cfg-help">Ende nuk ka shërbime. <a class="adm-link" href="/admin/services/new/">Shto një shërbim</a></p>
+        ) : (
+          <div class="checks">
+            {services.map((s) => (
+              <label class="adm-check">
+                <input type="checkbox" name="serviceIds" value={s.id} checked={profile.serviceIds.includes(s.id)} />
+                <span>{s.name} <span class="muted small">· {s.durationMin} min{s.active ? '' : ' · joaktiv'}</span></span>
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+      <div class="cfg-actions"><button class="btn btn--primary btn--sm" type="submit">{n(profileState) ? 'Konfirmo dhe ruaj' : 'Ruaj'}</button></div>
+    </form>
+
+    <!-- Weekly schedule -->
+    <form class="adm-panel cfg-form" method="post" action={self}>
+      <input type="hidden" name="intent" value="schedule" />
+      <input type="hidden" name="version" value={version} />
+      <div>
+        <h2 class="cfg-section-title">Orari javor i punës</h2>
+        <p class="cfg-help">Shtoni një ose më shumë periudha për çdo ditë (p.sh. 08:00–12:00 dhe 13:00–17:00 me pushim dreke). Ditët pa periudha janë ditë pushimi.</p>
+      </div>
+      {scheduleState.message && <p class={`adm-notice ${scheduleState.stale ? 'adm-notice--quiet' : ''}`} role="alert">{scheduleState.message}</p>}
+      {scheduleState.fields.periods && <p class="adm-notice" role="alert">{scheduleState.fields.periods}</p>}
+      <ConflictWarning
+        conflicts={scheduleState.conflicts}
+        title={`${countLabel(n(scheduleState), 'termin ekzistues do të jetë', 'termine ekzistuese do të jenë')} jashtë orarit të ri të ${doctor.name}.`}
+      />
+      <PeriodsEditor name="schedule" mode="week" value={scheduleValue} />
+      <div class="cfg-actions"><button class="btn btn--primary btn--sm" type="submit">{n(scheduleState) ? 'Konfirmo dhe ruaj orarin' : 'Ruaj orarin'}</button></div>
+    </form>
+
+    {doctor.appointmentCount === 0 && (
+      <form class="adm-panel cfg-form" method="post" action={self}>
+        <input type="hidden" name="intent" value="delete" />
+        <h2 class="cfg-section-title">Fshi dentistin</h2>
+        <p class="cfg-help">Ky dentist nuk ka asnjë termin në historik, prandaj mund të fshihet plotësisht.</p>
+        <label class="adm-check"><input type="checkbox" required /><span>Po, fshije {doctor.name}</span></label>
+        <div class="cfg-actions"><button class="btn btn--danger btn--sm" type="submit">Fshi</button></div>
+      </form>
+    )}
+    {doctor.appointmentCount > 0 && (
+      <p class="cfg-help">Dentistët me termine në historik nuk fshihen; çaktivizojini më lart nëse nuk punojnë më.</p>
+    )}
+  </div>
+</AdminLayout>

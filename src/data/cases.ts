@@ -1,11 +1,11 @@
 import type { ImageMetadata } from 'astro';
 import type { Lang } from '../i18n';
 
-import case1 from '../../beforeandafter/1.png';
-import case2 from '../../beforeandafter/2.png';
-import case3 from '../../beforeandafter/3.png';
-import case4 from '../../beforeandafter/4.png';
-import case5 from '../../beforeandafter/5.png';
+import case1 from '../assets/cases/1.png';
+import case2 from '../assets/cases/2.png';
+import case3 from '../assets/cases/3.png';
+import case4 from '../assets/cases/4.png';
+import case5 from '../assets/cases/5.png';
 
 /**
  * Before and after cases for the homepage section.

@@ -1,0 +1,503 @@
+---
+/**
+ * One appointment: details, contact actions, status actions, cancellation, edits and history.
+ * All actions are plain form posts (work without JS). Each form carries the appointment version;
+ * if someone else changed it meanwhile, nothing is overwritten and the fresh state is shown.
+ */
+import { logError } from '../../../../server/log.ts';
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import { getSql } from '../../../../server/db/client.ts';
+import {
+  cancelAppointmentByStaff,
+  getAppointment,
+  setAppointmentStatus,
+  updateAppointmentDetails,
+  type AppointmentView,
+} from '../../../../server/booking/appointments.ts';
+import { BookingError } from '../../../../server/booking/errors.ts';
+import { formatPhone } from '../../../../server/booking/phone.ts';
+import { requestDispatch, retryNotification } from '../../../../server/notifications/dispatcher.ts';
+import { loadPatientNotifications, notificationLabel, notificationState, type PatientNotification } from '../../../../server/admin/notifications.ts';
+import { clinicDate, clinicTime, errorMessage, formatDateLong, genericError, langLabel, sourceLabel, statusLabel } from '../../../../admin/strings.ts';
+
+export const prerender = false;
+
+const id = Astro.params.id ?? '';
+const staff = Astro.locals.staff!;
+const sql = getSql();
+const valid = /^[0-9a-f-]{36}$/i.test(id);
+const self = `/admin/appointments/${id}/`;
+
+let error: string | null = null;
+let openForm: string | null = null;
+const done = Astro.url.searchParams.get('done');
+const errParam = Astro.url.searchParams.get('error');
+if (errParam && errorMessage[errParam]) error = errorMessage[errParam];
+
+if (valid && Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const intent = String(form.get('intent') ?? '');
+  const version = Number(form.get('version'));
+  const expectedVersion = Number.isFinite(version) && version > 0 ? version : undefined;
+  const actor = { userId: staff.id };
+  try {
+    if (intent === 'status') {
+      await setAppointmentStatus(sql, { appointmentId: id, status: String(form.get('status')), expectedVersion }, actor);
+    } else if (intent === 'cancel') {
+      if (form.get('confirm') !== 'yes') {
+        openForm = 'cancel';
+        throw new BookingError('invalid_input', 'confirm');
+      }
+      await cancelAppointmentByStaff(sql, { appointmentId: id, reason: String(form.get('reason') ?? ''), expectedVersion }, actor);
+    } else if (intent === 'contact') {
+      openForm = 'contact';
+      await updateAppointmentDetails(sql, {
+        appointmentId: id,
+        expectedVersion,
+        contact: {
+          patientName: String(form.get('patientName') ?? ''),
+          patientPhone: String(form.get('patientPhone') ?? ''),
+          phoneCountry: String(form.get('phoneCountry') ?? 'XK'),
+          patientEmail: String(form.get('patientEmail') ?? ''),
+        },
+      }, actor);
+    } else if (intent === 'note') {
+      await updateAppointmentDetails(sql, { appointmentId: id, expectedVersion, staffNote: String(form.get('staffNote') ?? '') }, actor);
+    } else if (intent === 'retry_notification') {
+      const notificationId = String(form.get('notificationId') ?? '');
+      if (!/^[0-9a-f-]{36}$/i.test(notificationId)) throw new BookingError('invalid_input');
+      const [owned] = await sql`SELECT 1 FROM notifications WHERE id = ${notificationId} AND appointment_id = ${id}`;
+      if (!owned || !(await retryNotification(sql, notificationId))) throw new BookingError('invalid_status');
+    } else {
+      throw new BookingError('invalid_input');
+    }
+    requestDispatch(sql); // send whatever this change queued, after the transaction has committed
+    return Astro.redirect(`${self}?done=${encodeURIComponent(intent === 'status' ? String(form.get('status')) : intent)}`, 303);
+  } catch (err) {
+    if (err instanceof BookingError) {
+      if (err.code === 'concurrent_change') return Astro.redirect(`${self}?error=concurrent_change`, 303);
+      error =
+        err.details === 'confirm'
+          ? 'Konfirmoni anulimin duke shënuar kutinë.'
+          : err.code === 'invalid_input' && intent === 'contact'
+            ? 'Kontrolloni emrin (min. 2 shkronja) dhe email-in.'
+            : (errorMessage[err.code] ?? genericError);
+      Astro.response.status = 409;
+    } else {
+      logError('admin/appointment', err);
+      error = genericError;
+      Astro.response.status = 500;
+    }
+  }
+}
+
+let a: AppointmentView | undefined;
+let events: { type: string; actorType: string; actorName: string | null; fromStartsAt: Date | null; toStartsAt: Date | null; fromDoctor: string | null; toDoctor: string | null; fromStatus: string | null; toStatus: string | null; details: Record<string, unknown>; createdAt: Date }[] = [];
+let notifications: PatientNotification[] = [];
+let loadError = false;
+try {
+  if (valid) {
+    a = await getAppointment(sql, id);
+    if (a) {
+      notifications = await loadPatientNotifications(sql, id);
+      events = await sql`
+        SELECT e.type, e.actor_type, u.name AS actor_name, e.from_starts_at, e.to_starts_at,
+               fd.name AS from_doctor, td.name AS to_doctor, e.from_status, e.to_status, e.details, e.created_at
+        FROM appointment_events e
+        LEFT JOIN admin_users u ON u.id = e.actor_user_id
+        LEFT JOIN doctors fd ON fd.id = e.from_doctor_id
+        LEFT JOIN doctors td ON td.id = e.to_doctor_id
+        WHERE e.appointment_id = ${id}
+        ORDER BY e.created_at DESC, e.id DESC
+      `;
+    }
+  }
+} catch (err) {
+  logError('admin/appointment-load', err);
+  loadError = true;
+}
+if (!a && !loadError) Astro.response.status = 404;
+
+const now = Date.now();
+const started = a ? a.startsAt.getTime() <= now : false;
+const when = (d: Date) => `${formatDateLong(clinicDate(d))}, ${clinicTime(d)}`;
+const fieldNames: Record<string, string> = { patientName: 'emri', patientPhone: 'telefoni', patientEmail: 'email-i', staffNote: 'shënimi i brendshëm' };
+const actor = (e: (typeof events)[number]) => (e.actorType === 'patient' ? 'pacienti' : e.actorName ?? 'stafi');
+const describe = (e: (typeof events)[number]): string => {
+  switch (e.type) {
+    case 'created':
+      return e.actorType === 'patient' ? 'Rezervuar online nga pacienti' : `Krijuar nga ${actor(e)}`;
+    case 'rescheduled':
+      return `Zhvendosur nga ${actor(e)}: ${e.fromStartsAt ? when(e.fromStartsAt) : ''}${e.fromDoctor && e.fromDoctor !== e.toDoctor ? ` (${e.fromDoctor})` : ''} → ${e.toStartsAt ? when(e.toStartsAt) : ''}${e.toDoctor && e.fromDoctor !== e.toDoctor ? ` (${e.toDoctor})` : ''}`;
+    case 'cancelled':
+      return `Anuluar nga ${actor(e)}${e.details?.reason ? `: “${e.details.reason}”` : ''}`;
+    case 'status_changed':
+      return `Statusi u ndryshua nga ${actor(e)}: ${statusLabel[e.fromStatus ?? ''] ?? e.fromStatus} → ${statusLabel[e.toStatus ?? ''] ?? e.toStatus}`;
+    case 'edited':
+      return `Ndryshuar nga ${actor(e)}: ${((e.details?.fields as string[]) ?? []).map((f) => fieldNames[f] ?? f).join(', ')}`;
+    default:
+      return e.type;
+  }
+};
+const overridden = (e: (typeof events)[number]) => ((e.details?.overriddenIssues as string[]) ?? []).length > 0;
+const doneText: Record<string, string> = {
+  created: 'Termini u krijua.',
+  rescheduled: 'Termini u zhvendos.',
+  cancel: 'Termini u anulua. Koha është liruar.',
+  completed: 'Termini u shënua si i kryer.',
+  no_show: 'Termini u shënua si mungesë.',
+  scheduled: 'Statusi u kthye në “I planifikuar”.',
+  contact: 'Të dhënat e kontaktit u ruajtën.',
+  note: 'Shënimi u ruajt.',
+  retry_notification: 'Njoftimi do të dërgohet përsëri.',
+};
+const calendarHref = a ? `/admin/?date=${clinicDate(a.startsAt)}` : '/admin/';
+---
+
+<AdminLayout title={a ? a.patientName : 'Termini'}>
+  <div class="detail">
+    <a class="back adm-link" href={calendarHref}>← Kalendari</a>
+
+    {loadError && <p class="adm-notice" role="alert">Termini nuk mund të ngarkohet për momentin. Rifreskoni faqen pas pak.</p>}
+    {!a && !loadError && <p class="adm-notice">Termini nuk u gjet.</p>}
+
+    {a && (
+      <>
+        {done && doneText[done] && !error && <p class="adm-notice adm-notice--ok" role="status">{doneText[done]}</p>}
+        {error && <p class="adm-notice" role="alert">{error}</p>}
+
+        <header class="detail-head">
+          <div>
+            <p class="label-sm">{a.serviceName} · {a.doctorName}</p>
+            <h1 class="adm-title">{a.patientName}</h1>
+          </div>
+          <span class={`chip chip--${a.status}`}>{statusLabel[a.status]}</span>
+        </header>
+
+        <div class="detail-grid">
+          <div class="detail-main">
+            <section class="adm-panel">
+              <dl class="facts">
+                <div><dt>Data</dt><dd>{formatDateLong(clinicDate(a.startsAt))}</dd></div>
+                <div><dt>Ora</dt><dd class="tabular">{clinicTime(a.startsAt)}–{clinicTime(a.endsAt)} <span class="muted small">(ora e Kosovës)</span></dd></div>
+                <div><dt>Dentisti</dt><dd>{a.doctorName}</dd></div>
+                <div><dt>Shërbimi</dt><dd>{a.serviceName}</dd></div>
+                <div><dt>Burimi</dt><dd>{sourceLabel[a.source]}</dd></div>
+                <div><dt>Gjuha</dt><dd>{langLabel[a.lang]}</dd></div>
+              </dl>
+            </section>
+
+            <section class="adm-panel">
+              <h2 class="label-sm">Kontakti</h2>
+              <div class="contact">
+                <a class="btn btn--ghost btn--sm" href={`tel:${a.patientPhone}`}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 3h3l1.5 4.5-2.1 1.4a12 12 0 0 0 6.1 6.1l1.4-2.1L21 14.4v3A2.6 2.6 0 0 1 18.4 20 15.4 15.4 0 0 1 4 5.6 2.6 2.6 0 0 1 6.6 3z" /></svg>
+                  <span class="tabular">{formatPhone(a.patientPhone)}</span>
+                </a>
+                {a.patientEmail ? (
+                  <a class="btn btn--ghost btn--sm" href={`mailto:${a.patientEmail}`}>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v12H3zM3 6l9 7 9-7" /></svg>
+                    <span>{a.patientEmail}</span>
+                  </a>
+                ) : (
+                  <span class="muted small">Pa email</span>
+                )}
+              </div>
+              <details class="inline-form" open={openForm === 'contact'}>
+                <summary class="adm-link">Ndrysho të dhënat e kontaktit</summary>
+                <form method="post" action={self} class="form-grid">
+                  <input type="hidden" name="intent" value="contact" />
+                  <input type="hidden" name="version" value={a.updatedAt.getTime()} />
+                  <input type="hidden" name="phoneCountry" value="XK" />
+                  <label class="adm-field"><span>Emri dhe mbiemri</span><input type="text" name="patientName" required minlength="2" maxlength="200" value={a.patientName} /></label>
+                  <label class="adm-field"><span>Telefoni <em>(me +prefiks për numra jashtë Kosovës)</em></span><input type="tel" name="patientPhone" required maxlength="32" value={a.patientPhone} /></label>
+                  <label class="adm-field"><span>Email-i <em>(opsionale)</em></span><input type="email" name="patientEmail" maxlength="254" value={a.patientEmail ?? ''} /></label>
+                  <div><button class="btn btn--primary btn--sm" type="submit">Ruaj kontaktin</button></div>
+                </form>
+              </details>
+            </section>
+
+            <section class="adm-panel">
+              <h2 class="label-sm">Shënimi i pacientit</h2>
+              <p class="note">{a.patientNote ?? <span class="muted">—</span>}</p>
+              <h2 class="label-sm note-title">Shënim i brendshëm <span class="muted">(vetëm për stafin)</span></h2>
+              <form method="post" action={self} class="form-grid">
+                <input type="hidden" name="intent" value="note" />
+                <input type="hidden" name="version" value={a.updatedAt.getTime()} />
+                <label class="sr-only" for="staffNote">Shënim i brendshëm</label>
+                <textarea id="staffNote" name="staffNote" maxlength="2000" rows="3">{a.staffNote ?? ''}</textarea>
+                <div><button class="btn btn--ghost btn--sm" type="submit">Ruaj shënimin</button></div>
+              </form>
+            </section>
+
+            <section class="adm-panel">
+              <h2 class="label-sm">Njoftimet për pacientin</h2>
+              {notifications.length === 0 && (
+                <p class="muted small note-row">Asnjë njoftim për këtë termin.</p>
+              )}
+              {notifications.length > 0 && a.source === 'staff' && (
+                <p class="muted small note-row">Terminet e krijuara nga stafi marrin vetëm kujtesën me SMS, jo konfirmim.</p>
+              )}
+              <ul class="notifications">
+                {notifications.map((n) => {
+                  const st = notificationState(n);
+                  return (
+                    <li>
+                      <span>{notificationLabel(n)}<span class="muted small"> · {n.channel === 'sms' ? formatPhone(n.recipient) : n.recipient}</span></span>
+                      <span class={`chip chip--${st.tone === 'ok' ? 'completed' : st.tone === 'warn' ? 'no_show' : st.tone === 'off' ? 'cancelled' : 'scheduled'} chip--plain`}>{st.text}</span>
+                      {n.status === 'failed' && (
+                        <form method="post" action={self}>
+                          <input type="hidden" name="intent" value="retry_notification" />
+                          <input type="hidden" name="notificationId" value={n.id} />
+                          <button class="adm-link" type="submit">Provo përsëri</button>
+                        </form>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+
+            <section class="adm-panel">
+              <h2 class="label-sm">Historiku</h2>
+              <ol class="history">
+                {events.map((e) => (
+                  <li>
+                    <span class="muted small tabular">{formatDateLong(clinicDate(e.createdAt)).replace(/^[^,]+,\s*/, '')}, {clinicTime(e.createdAt)}</span>
+                    <span>{describe(e)}{overridden(e) && <span class="chip chip--plain warn">jashtë orarit të rregullt</span>}</span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          </div>
+
+          <aside class="detail-actions">
+            <section class="adm-panel actions">
+              <h2 class="label-sm">Veprime</h2>
+
+              {a.status === 'cancelled' && (
+                <p class="muted small">
+                  Anuluar {a.cancelledAt ? `më ${formatDateLong(clinicDate(a.cancelledAt)).replace(/^[^,]+,\s*/, '')}, ${clinicTime(a.cancelledAt)}` : ''}
+                  {a.cancelledByType === 'patient' ? ' nga pacienti' : ' nga stafi'}{a.cancelReason ? `: “${a.cancelReason}”` : '.'}
+                  {' '}Termini mbetet në historik; për një vizitë të re krijoni një termin të ri.
+                </p>
+              )}
+
+              {a.status === 'scheduled' && (
+                <a class="btn btn--primary btn--sm" href={`${self}reschedule/`}>Zhvendos terminin</a>
+              )}
+
+              {a.status === 'scheduled' && started && (
+                <div class="row">
+                  <form method="post" action={self}>
+                    <input type="hidden" name="intent" value="status" /><input type="hidden" name="status" value="completed" />
+                    <input type="hidden" name="version" value={a.updatedAt.getTime()} />
+                    <button class="btn btn--ghost btn--sm" type="submit">Shëno si i kryer</button>
+                  </form>
+                  <form method="post" action={self}>
+                    <input type="hidden" name="intent" value="status" /><input type="hidden" name="status" value="no_show" />
+                    <input type="hidden" name="version" value={a.updatedAt.getTime()} />
+                    <button class="btn btn--ghost btn--sm" type="submit">Nuk u paraqit</button>
+                  </form>
+                </div>
+              )}
+              {a.status === 'scheduled' && !started && (
+                <p class="muted small">“I kryer” dhe “Nuk u paraqit” mund të shënohen pasi të fillojë termini.</p>
+              )}
+
+              {(a.status === 'completed' || a.status === 'no_show') && (
+                <div class="row">
+                  <form method="post" action={self}>
+                    <input type="hidden" name="intent" value="status" />
+                    <input type="hidden" name="status" value={a.status === 'completed' ? 'no_show' : 'completed'} />
+                    <input type="hidden" name="version" value={a.updatedAt.getTime()} />
+                    <button class="btn btn--ghost btn--sm" type="submit">{a.status === 'completed' ? 'Ndrysho në: nuk u paraqit' : 'Ndrysho në: i kryer'}</button>
+                  </form>
+                  <form method="post" action={self}>
+                    <input type="hidden" name="intent" value="status" /><input type="hidden" name="status" value="scheduled" />
+                    <input type="hidden" name="version" value={a.updatedAt.getTime()} />
+                    <button class="adm-link" type="submit">Kthe në “I planifikuar”</button>
+                  </form>
+                </div>
+              )}
+
+              {a.status === 'scheduled' && (
+                <details class="cancel" open={openForm === 'cancel'}>
+                  <summary class="btn btn--danger btn--sm">Anulo terminin…</summary>
+                  <form method="post" action={self} class="form-grid">
+                    <input type="hidden" name="intent" value="cancel" />
+                    <input type="hidden" name="version" value={a.updatedAt.getTime()} />
+                    <p class="small">Termini anulohet dhe koha lirohet për pacientë të tjerë. Ky veprim nuk mund të zhbëhet.</p>
+                    <label class="adm-field"><span>Arsyeja <em>(opsionale)</em></span><input type="text" name="reason" maxlength="500" /></label>
+                    <label class="adm-check"><input type="checkbox" name="confirm" value="yes" required /><span>Po, anuloje këtë termin</span></label>
+                    <div><button class="btn btn--danger btn--sm" type="submit">Anulo terminin</button></div>
+                  </form>
+                </details>
+              )}
+            </section>
+          </aside>
+        </div>
+      </>
+    )}
+  </div>
+</AdminLayout>
+
+<style>
+  .detail {
+    max-width: 1080px;
+  }
+  .back {
+    display: inline-block;
+    margin-bottom: 16px;
+  }
+  .detail-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+  .detail-head .label-sm {
+    margin-bottom: 6px;
+  }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 18px;
+    align-items: start;
+  }
+  .detail-main {
+    display: grid;
+    gap: 14px;
+  }
+  .detail-actions {
+    position: sticky;
+    top: calc(var(--adm-top) + 16px);
+  }
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 20px;
+  }
+  .facts dt {
+    font-size: var(--fs-label);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .facts dd::first-letter {
+    text-transform: uppercase;
+  }
+  .contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0;
+  }
+  .contact svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.4;
+  }
+  .inline-form summary {
+    cursor: pointer;
+    display: inline-block;
+  }
+  .form-grid {
+    display: grid;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .note {
+    margin: 8px 0 18px;
+    white-space: pre-wrap;
+    line-height: 1.5;
+  }
+  .note-title {
+    margin-bottom: 8px;
+  }
+  .notifications {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .notifications li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .notifications .chip {
+    white-space: normal;
+    text-decoration: none;
+  }
+  .note-row {
+    margin-top: 10px;
+  }
+  .history {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .history li {
+    display: grid;
+    gap: 2px;
+    padding-left: 14px;
+    border-left: 1px solid var(--line);
+    line-height: 1.45;
+  }
+  .warn {
+    margin-left: 8px;
+    color: #8a5a00;
+  }
+  .actions {
+    display: grid;
+    gap: 14px;
+  }
+  .actions .btn {
+    width: 100%;
+  }
+  .row {
+    display: grid;
+    gap: 8px;
+  }
+  .cancel summary {
+    list-style: none;
+    width: 100%;
+  }
+  .cancel summary::-webkit-details-marker {
+    display: none;
+  }
+  .cancel[open] summary {
+    display: none;
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+  @media (max-width: 860px) {
+    .detail-grid {
+      grid-template-columns: 1fr;
+    }
+    .detail-actions {
+      position: static;
+      order: -1;
+    }
+  }
+  @media (max-width: 480px) {
+    .facts {
+      grid-template-columns: 1fr;
+    }
+    .contact .btn {
+      width: 100%;
+      justify-content: flex-start;
+    }
+  }
+</style>

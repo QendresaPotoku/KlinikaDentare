@@ -1,0 +1,649 @@
+---
+/**
+ * Main staff screen: the appointment calendar.
+ *   /admin/?view=day|week&date=YYYY-MM-DD&doctor=<id>&cancelled=1
+ * Desktop/tablet: time grid (day = one column per dentist, week = one column per day).
+ * Phone: day-first agenda list. Everything is rendered on the server; the page works without JS.
+ */
+import { logError } from '../../server/log.ts';
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getSql } from '../../server/db/client.ts';
+import { loadCalendar, type CalendarData, type CalendarAppointment } from '../../server/admin/calendar.ts';
+import { addDays, isValidLocalDate, todayLocal } from '../../server/time.ts';
+import {
+  formatDateLong,
+  formatDateShort,
+  formatDayMonth,
+  hhmm,
+  periodsLabel,
+  statusLabel,
+  timeOffLabel,
+} from '../../admin/strings.ts';
+
+export const prerender = false;
+
+const params = Astro.url.searchParams;
+const now = Date.now();
+const today = todayLocal(now);
+const view = params.get('view') === 'week' ? 'week' : 'day';
+const dateParam = params.get('date');
+const date = isValidLocalDate(dateParam) ? dateParam : today;
+const doctorParam = params.get('doctor');
+const doctorId = doctorParam && /^[0-9a-f-]{36}$/i.test(doctorParam) ? doctorParam : null;
+const showCancelled = params.get('cancelled') === '1';
+
+let cal: CalendarData | null = null;
+let loadError = false;
+try {
+  cal = await loadCalendar(getSql(), { view, date, doctorId, showCancelled, now });
+} catch (err) {
+  logError('admin/calendar', err);
+  loadError = true;
+}
+
+const link = (changes: Record<string, string | null>) => {
+  const p = new URLSearchParams();
+  const merged = { view, date, doctor: cal?.doctorId ?? null, cancelled: showCancelled ? '1' : null, ...changes };
+  for (const [k, v] of Object.entries(merged)) if (v) p.set(k, v);
+  return `/admin/?${p}`;
+};
+const step = view === 'week' ? 7 : 1;
+const prevHref = link({ date: addDays(date, -step) });
+const nextHref = link({ date: addDays(date, step) });
+const todayHref = link({ date: today });
+
+const heading = cal
+  ? view === 'day'
+    ? formatDateLong(date)
+    : `${formatDayMonth(cal.from)} – ${formatDateLong(cal.to).replace(/^[^,]+,\s*/, '')}`
+  : '';
+
+const PPM = 84 / 60; // pixels per minute, matches --hour in admin.css
+const top = (minute: number) => (minute - (cal?.hourStart ?? 0) * 60) * PPM;
+const hours = cal ? Array.from({ length: cal.hourEnd - cal.hourStart }, (_, i) => cal!.hourStart + i) : [];
+const gridHeight = cal ? (cal.hourEnd - cal.hourStart) * 84 : 0;
+const allDoctorsInWeek = cal?.view === 'week' && !cal.doctorId;
+const missingSchedules = cal?.doctors.filter((d) => d.active && !d.hasSchedule) ?? [];
+const totalShown = cal?.agenda.reduce((n, d) => n + d.items.length, 0) ?? 0;
+
+const blockHeight = (a: CalendarAppointment) => Math.max((a.endMinute - a.startMinute) * PPM - 2, 22);
+/** Short blocks get a compact layout so text never overlaps: one line, or two lines. */
+const blockSize = (a: CalendarAppointment) => (blockHeight(a) < 34 ? 'is-xs' : blockHeight(a) < 62 ? 'is-sm' : '');
+const blockStyle = (a: CalendarAppointment) => {
+  const height = blockHeight(a);
+  return `top:${top(a.startMinute)}px;height:${height}px;left:calc(${(a.lane / a.lanes) * 100}% + 2px);width:calc(${100 / a.lanes}% - 4px)`;
+};
+---
+
+<AdminLayout title="Kalendari" active="calendar">
+  <div class="cal" data-cal>
+    <form class="cal-bar" method="get" action="/admin/" data-cal-form>
+      <div class="cal-nav">
+        <a class="btn btn--ghost btn--sm" href={todayHref}>Sot</a>
+        <a class="cal-arrow" href={prevHref} aria-label={view === 'week' ? 'Java e kaluar' : 'Dita e kaluar'}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+        </a>
+        <a class="cal-arrow" href={nextHref} aria-label={view === 'week' ? 'Java tjetër' : 'Dita tjetër'}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
+        </a>
+        <h1 class="cal-heading">
+          {heading}
+          {view === 'day' && date === today && <span class="chip chip--plain">Sot</span>}
+        </h1>
+      </div>
+
+      <div class="cal-filters">
+        <input type="hidden" name="date" value={date} />
+        <div class="seg" role="group" aria-label="Pamja">
+          <a href={link({ view: 'day' })} aria-current={view === 'day' ? 'true' : undefined}>Dita</a>
+          <a href={link({ view: 'week' })} aria-current={view === 'week' ? 'true' : undefined}>Java</a>
+        </div>
+        <input type="hidden" name="view" value={view} />
+        <label class="sr-only" for="cal-doctor">Dentisti</label>
+        <select id="cal-doctor" name="doctor" data-autosubmit>
+          <option value="">Të gjithë dentistët</option>
+          {cal?.doctors.map((d) => (
+            <option value={d.id} selected={d.id === cal?.doctorId}>{d.name}{d.active ? '' : ' (joaktiv)'}</option>
+          ))}
+        </select>
+        <label class="adm-check cal-cancelled">
+          <input type="checkbox" name="cancelled" value="1" checked={showCancelled} data-autosubmit />
+          <span>Të anuluarat</span>
+        </label>
+        <noscript><button class="btn btn--ghost btn--sm" type="submit">Shfaq</button></noscript>
+      </div>
+    </form>
+
+    {loadError && (
+      <p class="adm-notice" role="alert">Kalendari nuk mund të ngarkohet për momentin. Rifreskoni faqen pas pak.</p>
+    )}
+
+    {missingSchedules.length > 0 && (
+      <p class="adm-notice adm-notice--quiet">
+        {missingSchedules.map((d) => d.name).join(', ')}
+        {missingSchedules.length === 1 ? ' nuk ka' : ' nuk kanë'} ende orar pune të konfiguruar, prandaj nuk shfaqen orare të lira online.
+      </p>
+    )}
+
+    {cal && (
+      <>
+        {/* ---------------- Desktop / tablet: time grid ---------------- */}
+        <div class={`grid-wrap ${view}`} style={`--cols:${cal.columns.length}`}>
+          <div class="grid-head">
+            <div class="gutter-head"></div>
+            {cal.columns.map((c) => (
+              <div class={`col-head ${c.date === cal!.today && view === 'week' ? 'is-today' : ''}`}>
+                {view === 'day' ? (
+                  <>
+                    <strong>{c.title}</strong>
+                    <span class="muted small">
+                      {c.closed ? 'Klinika e mbyllur' : c.working && c.working.length ? periodsLabel(c.working) : 'Nuk punon'}
+                    </span>
+                  </>
+                ) : (
+                  <a href={link({ view: 'day', date: c.date })}>
+                    <strong>{formatDateShort(c.date)}</strong>
+                    {c.closed && <span class="muted small">Klinika e mbyllur</span>}
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div class="grid-body" style={`height:${gridHeight}px`}>
+            <div class="gutter">
+              {hours.map((h, i) => (
+                <span style={`top:${i * 84}px`}>{hhmm(h * 60)}</span>
+              ))}
+            </div>
+            {cal.columns.map((c) => (
+              <div class={`col ${c.working ? 'has-hours' : ''} ${c.closed ? 'is-closed' : ''}`}>
+                {c.working?.map((p) => (
+                  <div class="open" style={`top:${top(p.startMinute)}px;height:${(p.endMinute - p.startMinute) * PPM}px`}></div>
+                ))}
+                {c.timeOff.map((t) => (
+                  <div class="off" style={`top:${Math.max(0, top(t.startMinute))}px;height:${Math.max(0, Math.min(t.endMinute, cal!.hourEnd * 60) - Math.max(t.startMinute, cal!.hourStart * 60)) * PPM}px`}>
+                    <span>{timeOffLabel[t.reason]}{t.note ? ` · ${t.note}` : ''}</span>
+                  </div>
+                ))}
+                {c.closed && <div class="closed-label">Klinika e mbyllur{c.closed.note ? ` · ${c.closed.note}` : ''}</div>}
+                {c.date === cal!.today && cal!.nowMinute !== null && cal!.nowMinute >= cal!.hourStart * 60 && cal!.nowMinute <= cal!.hourEnd * 60 && (
+                  <div class="now" style={`top:${top(cal!.nowMinute)}px`} data-now data-hour-start={cal!.hourStart} aria-hidden="true"></div>
+                )}
+                {c.appointments.map((a) => (
+                  <a class={`appt is-${a.status} ${blockSize(a)}`} href={`/admin/appointments/${a.id}/`} style={blockStyle(a)}
+                    title={`${a.timeLabel} · ${a.patientName} · ${a.serviceName} · ${a.doctorName} · ${statusLabel[a.status]}`}>
+                    <span class="appt-line"><span class="appt-time tabular">{a.timeLabel}</span> <span class="appt-name">{a.patientName}</span></span>
+                    <span class="appt-meta">{a.serviceName}{allDoctorsInWeek ? ` · ${a.doctorName}` : ''}</span>
+                    {a.status !== 'scheduled' && <span class="appt-status">{statusLabel[a.status]}</span>}
+                  </a>
+                ))}
+              </div>
+            ))}
+          </div>
+          {totalShown === 0 && (
+            <p class="grid-empty muted">{view === 'day' ? 'Nuk ka termine për këtë ditë.' : 'Nuk ka termine për këtë javë.'}</p>
+          )}
+        </div>
+
+        {/* ---------------- Phone: agenda ---------------- */}
+        <div class="agenda">
+          {cal.agenda.map((day) => (
+            <section class="agenda-day">
+              <h2 class={`agenda-date ${view === 'day' ? 'sr-only' : ''}`}>
+                {formatDateLong(day.date)}
+                {day.date === cal!.today && <span class="chip chip--plain">Sot</span>}
+              </h2>
+              <p class="agenda-hours muted small">
+                {day.working.map((w) => `${w.doctorName}: ${w.periods.length ? periodsLabel(w.periods) : 'nuk punon'}`).join(' · ')}
+              </p>
+              {day.items.length === 0 ? (
+                <p class="agenda-empty muted">Nuk ka termine.</p>
+              ) : (
+                <ul class="agenda-list">
+                  {day.items.map((a) => (
+                    <li>
+                      <a class={`agenda-item is-${a.status}`} href={`/admin/appointments/${a.id}/`}>
+                        <span class="agenda-time tabular">{a.timeLabel.split('–')[0]}<small>{a.timeLabel.split('–')[1]}</small></span>
+                        <span class="agenda-main">
+                          <span class="agenda-name">{a.patientName}</span>
+                          <span class="muted small">{a.serviceName}{cal!.doctorId ? '' : ` · ${a.doctorName}`}</span>
+                        </span>
+                        {a.status !== 'scheduled' && <span class={`chip chip--${a.status}`}>{statusLabel[a.status]}</span>}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          ))}
+        </div>
+      </>
+    )}
+  </div>
+</AdminLayout>
+
+<script>
+  // Filters submit on change; the "now" line moves every minute (no reload needed).
+  document.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-autosubmit]').forEach((el) =>
+    el.addEventListener('change', () => el.form?.submit()),
+  );
+  const now = document.querySelector<HTMLElement>('[data-now]');
+  if (now) {
+    const hourStart = Number(now.dataset.hourStart);
+    const tick = () => {
+      const parts = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Belgrade' })
+        .format(new Date())
+        .split(':')
+        .map(Number);
+      now.style.top = `${(parts[0] * 60 + parts[1] - hourStart * 60) * (84 / 60)}px`;
+    };
+    window.setInterval(tick, 60_000);
+  }
+</script>
+
+<style>
+  .cal-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px 24px;
+    margin-bottom: 18px;
+  }
+  .cal-nav,
+  .cal-filters {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .cal-arrow {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    background: #fff;
+  }
+  .cal-arrow:hover {
+    border-color: var(--ink);
+  }
+  .cal-arrow svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.4;
+  }
+  .cal-heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: 8px;
+    font-size: clamp(1.125rem, 1.6vw, 1.375rem);
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+  .cal-heading::first-letter {
+    text-transform: uppercase;
+  }
+  .seg {
+    display: inline-flex;
+    border: 1px solid var(--line);
+    background: #fff;
+  }
+  .seg a {
+    padding: 11px 16px;
+    font-size: 0.875rem;
+  }
+  .seg a[aria-current='true'] {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .cal-filters select {
+    width: auto;
+    min-width: 190px;
+  }
+  .cal-cancelled {
+    grid-template-columns: 18px auto;
+    font-size: 0.875rem;
+    padding: 0 4px;
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  /* ---------- time grid ---------- */
+  .grid-wrap {
+    position: relative;
+    background: #fff;
+    border: 1px solid var(--line);
+  }
+  .grid-head,
+  .grid-body {
+    display: grid;
+    grid-template-columns: 56px repeat(var(--cols), minmax(0, 1fr));
+  }
+  .grid-head {
+    position: sticky;
+    top: var(--adm-top);
+    z-index: 5;
+    background: #fff;
+    border-bottom: 1px solid var(--line);
+  }
+  .col-head {
+    display: grid;
+    gap: 2px;
+    padding: 10px 12px;
+    border-left: 1px solid var(--line);
+    font-size: 0.875rem;
+    min-width: 0;
+  }
+  .col-head a {
+    display: grid;
+    gap: 2px;
+  }
+  .col-head strong {
+    font-weight: 500;
+  }
+  .week .col-head strong::first-letter {
+    text-transform: uppercase;
+  }
+  .col-head.is-today strong {
+    color: var(--crimson);
+  }
+  .grid-body {
+    position: relative;
+  }
+  /* Hour and half-hour lines drawn above the shading, below the appointments. */
+  .grid-body::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 0 56px;
+    z-index: 1;
+    pointer-events: none;
+    background-image:
+      linear-gradient(to bottom, var(--line) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(23 23 23 / 0.05) 1px, transparent 1px);
+    background-size:
+      100% var(--hour),
+      100% calc(var(--hour) / 2);
+  }
+  .gutter {
+    position: relative;
+  }
+  .gutter span {
+    position: absolute;
+    right: 8px;
+    transform: translateY(-50%);
+    font-size: 0.6875rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    background: #fff;
+    padding: 0 2px;
+  }
+  .gutter span:first-child {
+    transform: none;
+  }
+  .col {
+    position: relative;
+    border-left: 1px solid var(--line);
+    min-width: 0;
+  }
+  /* With known hours, closed time is tinted and open time is white. */
+  .col.has-hours {
+    background: rgb(239 236 231 / 0.65);
+  }
+  .col.is-closed {
+    background: repeating-linear-gradient(-45deg, rgb(239 236 231 / 0.9) 0 8px, rgb(228 223 216 / 0.9) 8px 9px);
+  }
+  .open {
+    position: absolute;
+    left: 0;
+    right: 0;
+    background: #fff;
+  }
+  .off {
+    position: absolute;
+    left: 0;
+    right: 0;
+    background: repeating-linear-gradient(-45deg, rgb(201 20 60 / 0.06) 0 8px, rgb(201 20 60 / 0.12) 8px 9px);
+    border-top: 1px solid rgb(201 20 60 / 0.25);
+    z-index: 1;
+  }
+  .off span,
+  .closed-label {
+    position: absolute;
+    top: 6px;
+    left: 8px;
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--crimson-deep);
+  }
+  .closed-label {
+    color: var(--muted);
+  }
+  .now {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-top: 2px solid var(--crimson);
+    z-index: 3;
+  }
+  .now::before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: -6px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--crimson);
+  }
+  .appt {
+    position: absolute;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 4px 8px 4px 9px;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid rgb(201 20 60 / 0.35);
+    border-left: 3px solid var(--crimson);
+    font-size: 0.8125rem;
+    line-height: 1.3;
+    box-shadow: 0 1px 0 rgb(23 23 23 / 0.04);
+  }
+  .appt:hover {
+    border-color: var(--crimson);
+    z-index: 4;
+  }
+  .appt-line {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+  .appt-time {
+    font-size: 0.6875rem;
+    color: var(--muted);
+  }
+  .appt.is-sm .appt-line,
+  .appt.is-xs .appt-line {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .appt.is-sm .appt-time,
+  .appt.is-xs .appt-time {
+    flex: none;
+  }
+  .appt.is-sm,
+  .appt.is-xs {
+    padding-top: 3px;
+    padding-bottom: 2px;
+  }
+  .appt.is-xs .appt-meta,
+  .appt.is-xs .appt-status,
+  .appt.is-sm .appt-status {
+    display: none;
+  }
+  .appt-name {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .appt-meta,
+  .appt-status {
+    font-size: 0.75rem;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .appt.is-completed {
+    border-color: rgb(47 107 69 / 0.3);
+    border-left-color: var(--ok);
+    background: #f4f8f5;
+  }
+  .appt.is-no_show {
+    border-color: rgb(138 90 0 / 0.3);
+    border-left-color: #8a5a00;
+    background: #fbf6ec;
+  }
+  .appt.is-cancelled {
+    background: transparent;
+    border: 1px dashed var(--muted-light);
+    border-left: 3px solid var(--muted-light);
+    color: var(--muted);
+    opacity: 0.85;
+  }
+  .appt.is-cancelled .appt-name {
+    text-decoration: line-through;
+    font-weight: 400;
+  }
+  .grid-empty {
+    position: absolute;
+    top: 64px;
+    left: 56px;
+    right: 0;
+    text-align: center;
+    pointer-events: none;
+  }
+
+  /* ---------- agenda (phones) ---------- */
+  .agenda {
+    display: none;
+  }
+  .agenda-day + .agenda-day {
+    margin-top: 26px;
+  }
+  .agenda-date {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.0625rem;
+    font-weight: 500;
+  }
+  .agenda-date::first-letter {
+    text-transform: uppercase;
+  }
+  .agenda-hours {
+    margin: 4px 0 10px;
+  }
+  .agenda-empty {
+    padding: 16px;
+    border: 1px dashed var(--line);
+    background: #fff;
+  }
+  .agenda-list {
+    display: grid;
+    gap: 8px;
+  }
+  .agenda-item {
+    display: grid;
+    grid-template-columns: 54px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--crimson);
+  }
+  .agenda-time {
+    display: grid;
+    font-size: 1rem;
+    font-weight: 500;
+  }
+  .agenda-time small {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--muted);
+  }
+  .agenda-main {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+  .agenda-name {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .agenda-item.is-completed {
+    border-left-color: var(--ok);
+  }
+  .agenda-item.is-no_show {
+    border-left-color: #8a5a00;
+  }
+  .agenda-item.is-cancelled {
+    border-left-color: var(--muted-light);
+    border-style: dashed;
+    background: transparent;
+  }
+  .agenda-item.is-cancelled .agenda-name {
+    text-decoration: line-through;
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  @media (max-width: 760px) {
+    .grid-wrap {
+      display: none;
+    }
+    .agenda {
+      display: block;
+    }
+    .cal-bar {
+      gap: 10px;
+    }
+    .cal-heading {
+      order: 5;
+      width: 100%;
+      margin: 6px 0 0;
+    }
+    .cal-filters {
+      width: 100%;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+    .cal-filters select {
+      min-width: 0;
+      width: 100%;
+    }
+    .cal-cancelled {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

@@ -1,0 +1,72 @@
+---
+/**
+ * Future appointments that conflict with the current configuration. Derived on every request
+ * (see server/admin/attention.ts): an entry disappears by itself once the conflict is resolved.
+ */
+import { logError } from '../../../server/log.ts';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { getSql } from '../../../server/db/client.ts';
+import { findAttention, type AttentionItem } from '../../../server/admin/attention.ts';
+import { clinicDate, clinicTime, formatDateLong } from '../../../admin/strings.ts';
+
+export const prerender = false;
+
+let items: AttentionItem[] = [];
+let failed = false;
+try {
+  items = await findAttention(getSql(), { now: Date.now() });
+} catch (err) {
+  logError('admin/attention', err);
+  failed = true;
+}
+---
+
+<AdminLayout title="Kërkojnë vëmendje" active="attention">
+  <div class="cfg">
+    <header class="cfg-head">
+      <div>
+        <h1 class="adm-title">Kërkojnë vëmendje</h1>
+        <p class="muted small">
+          Termine të ardhshme që nuk përputhen më me orarin, mungesat ose konfigurimin aktual. Hapni terminin për ta zhvendosur
+          ose anuluar. Termini largohet nga lista vetë, sapo problemi zgjidhet.
+        </p>
+      </div>
+    </header>
+
+    {failed && <p class="adm-notice" role="alert">Lista nuk mund të ngarkohet për momentin. Rifreskoni faqen pas pak.</p>}
+    {!failed && items.length === 0 && (
+      <p class="adm-notice adm-notice--ok">Asnjë termin nuk kërkon vëmendje. Të gjitha terminet e ardhshme përputhen me konfigurimin aktual.</p>
+    )}
+
+    <div class="cfg-list">
+      {items.map((a) => (
+        <a class="cfg-item attention-item" href={`/admin/appointments/${a.id}/`}>
+          <div>
+            <p class="cfg-item-title">{a.patientName}</p>
+            <p class="cfg-item-sub">
+              {formatDateLong(clinicDate(a.startsAt))}, {clinicTime(a.startsAt)} · {a.doctorName} · {a.serviceName}
+            </p>
+            <ul class="reasons">
+              {a.reasons.map((r) => <li class="conflict-reason">{r.text}</li>)}
+            </ul>
+          </div>
+          <span class="adm-link">Hap terminin →</span>
+        </a>
+      ))}
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+  .attention-item {
+    border-left: 3px solid #8a5a00;
+  }
+  .reasons {
+    display: grid;
+    gap: 2px;
+    margin-top: 6px;
+  }
+  .cfg-item-sub::first-letter {
+    text-transform: uppercase;
+  }
+</style>

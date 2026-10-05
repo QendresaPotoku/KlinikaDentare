@@ -11,7 +11,10 @@ import treatmentFocus from '../assets/photos/treatment-focus.jpg';
 import xrayReview from '../assets/photos/xray-review.jpg';
 import instrumentsStill from '../assets/photos/instruments-still.jpg';
 import mirrorBlur from '../assets/photos/mirror-blur.jpg';
-import heroConsultation from '../assets/photos/hero-consultation.jpg';
+import treatmentCamera from '../assets/photos/treatment-camera.jpg';
+import patientMirror from '../assets/photos/patient-mirror.jpg';
+import surgeryClinic from '../assets/photos/surgery-clinic.webp';
+import alignerHand from '../assets/photos/aligner-hand.jpg';
 
 export type GalleryCategory = 'interior' | 'team' | 'treatment' | 'cases';
 
@@ -21,6 +24,8 @@ export interface GalleryItem {
   alt: string;
   /** Shape in the editorial grid. */
   shape: 'tall' | 'wide' | 'square' | 'large';
+  /** Which part of the photo stays in view when the square tile crops it (CSS object-position). Defaults to centre. */
+  focus?: string;
 }
 
 /**
@@ -28,9 +33,12 @@ export interface GalleryItem {
  * with photographs of the clinic. Patient cases: add only with written patient consent.
  */
 export const gallery: GalleryItem[] = [
+  { image: treatmentCamera, category: 'team', alt: 'Dentist examining a patient with the intraoral camera on screen', shape: 'large', focus: '20% 50%' },
+  { image: surgeryClinic, category: 'team', alt: 'Two dentists performing oral surgery', shape: 'tall', focus: '50% 40%' },
+  { image: patientMirror, category: 'treatment', alt: 'Patient smiling at her new teeth in a hand mirror', shape: 'wide', focus: '60% 50%' },
+  { image: alignerHand, category: 'treatment', alt: 'Clear aligner held up to the camera', shape: 'tall', focus: '50% 60%' },
   { image: roomLight, category: 'interior', alt: 'Dental treatment room with natural light', shape: 'large' },
   { image: chairWindow, category: 'interior', alt: 'Dental chair beside a window', shape: 'tall' },
-  { image: heroConsultation, category: 'team', alt: 'Dentist in conversation with a patient', shape: 'wide' },
   { image: instrumentsStill, category: 'treatment', alt: 'Dental instruments on a white surface', shape: 'tall' },
   { image: roomWide, category: 'interior', alt: 'Bright dental treatment room', shape: 'wide' },
   { image: exam, category: 'treatment', alt: 'Dental examination in progress', shape: 'square' },

@@ -1,0 +1,109 @@
+---
+import { logError } from '../../server/log.ts';
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import LogoMark from '../../components/LogoMark.astro';
+import { getSql } from '../../server/db/client.ts';
+import { login, safeNextPath } from '../../server/auth/session.ts';
+import { setSessionCookie } from '../../server/auth/cookie.ts';
+import { cookieSecure } from '../../server/auth/origin.ts';
+import { clientIp } from '../../server/security/client-ip.ts';
+import { config } from '../../server/config.ts';
+
+export const prerender = false;
+
+const next = safeNextPath(Astro.url.searchParams.get('next'));
+if (Astro.locals.staff) return Astro.redirect(next, 303);
+
+let error: string | null = null;
+let email = '';
+const expired = Astro.url.searchParams.get('expired') === '1';
+const loggedOut = Astro.url.searchParams.get('out') === '1';
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  email = String(form.get('email') ?? '').slice(0, 254);
+  const password = String(form.get('password') ?? '');
+  let socket: string | undefined;
+  try {
+    socket = Astro.clientAddress;
+  } catch {
+    socket = undefined;
+  }
+  try {
+    const result = await login(getSql(), {
+      email,
+      password,
+      ip: clientIp(Astro.request, socket, config.trustProxy, config.trustProxyHops),
+      userAgent: Astro.request.headers.get('user-agent') ?? undefined,
+    });
+    if (result.ok) {
+      setSessionCookie(Astro.cookies, result.token, cookieSecure(Astro.url));
+      return Astro.redirect(safeNextPath(String(form.get('next') ?? next)), 303);
+    }
+    error =
+      result.reason === 'rate_limited'
+        ? 'Shumë përpjekje të pasuksesshme. Prisni 15 minuta dhe provoni përsëri.'
+        : 'Email-i ose fjalëkalimi nuk është i saktë.';
+    Astro.response.status = result.reason === 'rate_limited' ? 429 : 401;
+  } catch (err) {
+    logError('admin/login', err);
+    error = 'Kyçja nuk është e mundur për momentin. Provoni përsëri pas pak.';
+    Astro.response.status = 503;
+  }
+}
+---
+
+<AdminLayout title="Kyçu" bare>
+  <div class="login">
+    <form class="login-card adm-panel" method="post" action={`/admin/login/?next=${encodeURIComponent(next)}`}>
+      <div class="login-head">
+        <LogoMark class="login-mark" />
+        <div>
+          <h1 class="adm-title">Paneli i klinikës</h1>
+          <p class="muted small">Kyçuni me llogarinë tuaj të stafit.</p>
+        </div>
+      </div>
+
+      {expired && !error && <p class="adm-notice adm-notice--quiet">Seanca juaj ka skaduar. Ju lutemi kyçuni përsëri.</p>}
+      {loggedOut && !error && <p class="adm-notice adm-notice--ok">U çkyçët me sukses.</p>}
+      {error && <p class="adm-notice" role="alert">{error}</p>}
+
+      <input type="hidden" name="next" value={next} />
+      <label class="adm-field">
+        <span>Email-i</span>
+        <input type="email" name="email" autocomplete="username" required value={email} autofocus />
+      </label>
+      <label class="adm-field">
+        <span>Fjalëkalimi</span>
+        <input type="password" name="password" autocomplete="current-password" required />
+      </label>
+      <button class="btn btn--primary" type="submit">Kyçu</button>
+    </form>
+  </div>
+</AdminLayout>
+
+<style>
+  .login {
+    min-height: calc(100dvh - 64px);
+    display: grid;
+    place-items: center;
+  }
+  .login-card {
+    width: min(420px, 100%);
+    display: grid;
+    gap: 18px;
+    border-top: 3px solid var(--crimson);
+  }
+  .login-head {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .login-mark {
+    width: 44px;
+    height: 40px;
+    color: var(--crimson);
+    flex: none;
+  }
+</style>
