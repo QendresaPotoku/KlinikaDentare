@@ -42,8 +42,8 @@ const t = useT(lang);
       <a class="btn btn--primary" href={paths.section(lang, 'contact')} data-book>
         {t.hero.cta1}<Arrow />
       </a>
-      <a class="btn btn--light" href={links.whatsapp} target="_blank" rel="noopener">
-        <Icon name="whatsapp" class="wa" />WhatsApp
+      <a class="btn btn--light btn-wa" href={links.whatsapp} target="_blank" rel="noopener" aria-label="WhatsApp">
+        <Icon name="whatsapp" class="wa" /><span class="wa-label">WhatsApp</span>
       </a>
     </div>
   </div>
@@ -139,10 +139,14 @@ const t = useT(lang);
     margin-top: 36px;
     overflow: hidden;
   }
-  .wa {
-    width: 18px;
-    height: 18px;
+  /* :global — the svg is rendered by Icon.astro, so this component's scoped class never reaches it */
+  .cta-wrap :global(.wa) {
+    width: 20px;
+    height: 20px;
     flex: none;
+  }
+  .btn-wa {
+    gap: 10px;
   }
   /* Masked rise (motion only) */
   :global(html.motion) .rise > * {
@@ -187,11 +191,21 @@ const t = useT(lang);
       font-size: 0.9375rem;
     }
     .cta-wrap {
+      flex-wrap: nowrap;
       margin-top: 24px;
     }
     .cta-wrap .btn {
       flex: 1 1 auto;
       padding: 0 20px;
+    }
+    /* Compact square icon button beside the primary CTA */
+    .cta-wrap .btn-wa {
+      flex: none;
+      width: 54px;
+      padding: 0;
+    }
+    .wa-label {
+      display: none;
     }
   }
 </style>

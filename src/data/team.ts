@@ -1,6 +1,6 @@
 import type { ImageMetadata } from 'astro';
 import petritiPhoto from '../assets/team/Petriti.webp';
-import vleraPhoto from '../assets/team/Vlera.webp';
+import vleraPhoto from '../assets/team/Vlera.png';
 
 /**
  * Team page. Text lives in src/i18n (team.* and doctors.people); this file holds structure and photos.

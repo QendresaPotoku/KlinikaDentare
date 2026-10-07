@@ -359,8 +359,22 @@ const allMembers = teamGroups.flatMap((g) => g.members);
     .team {
       --c: calc((100vw - 2 * var(--gutter) - 20px) / 2);
     }
+    /* Label circle centred on its own line, members in pairs beneath it */
     .row {
-      gap: 32px 20px;
+      display: grid;
+      grid-template-columns: repeat(2, var(--c));
+      justify-content: center;
+      gap: 28px 20px;
+    }
+    .group {
+      grid-column: 1 / -1;
+      justify-self: center;
+      width: calc(var(--c) * 0.85);
+    }
+    /* An odd member out sits centred rather than hugging the left column */
+    .member:last-child:nth-child(even) {
+      grid-column: 1 / -1;
+      justify-self: center;
     }
     .drawer {
       width: 100%;

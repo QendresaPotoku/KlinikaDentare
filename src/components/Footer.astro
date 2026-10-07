@@ -33,7 +33,7 @@ const year = new Date().getFullYear();
           {site.address.line2}
         </address>
       </div>
-      <div class="col">
+      <div class="col col--contact">
         <p class="col-title">{t.footer.contact}</p>
         <ul>
           <li><a href={links.tel} set:html={ph(site.phone.display, lang)} /></li>
@@ -44,7 +44,7 @@ const year = new Date().getFullYear();
           </li>
         </ul>
       </div>
-      <div class="col">
+      <div class="col col--hours">
         <p class="col-title">{t.contact.hours}</p>
         <dl class="hours">
           {site.hours.map((h) => (
@@ -156,12 +156,30 @@ const year = new Date().getFullYear();
       grid-column: 1 / -1;
     }
   }
+  /* Phones: logo, then pages beside address, then contact and hours full width */
   @media (max-width: 600px) {
+    .footer {
+      padding-top: 48px;
+    }
     .cols {
-      grid-template-columns: 1fr;
+      column-gap: 24px;
+      row-gap: 32px;
+      padding-bottom: 36px;
     }
     .mark {
-      width: 56px;
+      width: 44px;
+    }
+    .col-title {
+      margin-bottom: 12px;
+    }
+    .col--contact,
+    .col--hours {
+      grid-column: 1 / -1;
+    }
+    .bottom {
+      flex-direction: column;
+      gap: 8px;
+      padding-top: 20px;
     }
   }
 </style>
