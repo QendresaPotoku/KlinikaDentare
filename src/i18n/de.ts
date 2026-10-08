@@ -181,6 +181,7 @@ const de: typeof sq = {
         bio: '[[Die Kurzbiografie von Dr. Petriti wird ergänzt, sobald die Klinik den Lebenslauf sendet.]]',
         experience: '[[Jahre Berufserfahrung und Schwerpunkte]]',
         education: '[[Universität, Spezialisierungen und Fortbildungen]]',
+        quote: '',
       },
       {
         name: 'Dr. Vlera',
@@ -188,6 +189,7 @@ const de: typeof sq = {
         bio: '[[Die Kurzbiografie von Dr. Vlera wird ergänzt, sobald die Klinik den Lebenslauf sendet.]]',
         experience: '[[Jahre Berufserfahrung und Schwerpunkte]]',
         education: '[[Universität, Spezialisierungen und Fortbildungen]]',
+        quote: '',
       },
     ],
   },
@@ -315,7 +317,6 @@ const de: typeof sq = {
   team: {
     label: 'Team',
     title: 'Das Team der Klinik',
-    intro: 'Die Menschen, die Sie in der Klinik empfangen. Wählen Sie eine Person, um mehr zu erfahren.',
     groups: { doctors: 'Ärzte', staff: 'Team' },
     openProfile: 'Profil öffnen von',
     close: 'Schließen',

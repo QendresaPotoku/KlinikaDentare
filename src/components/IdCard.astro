@@ -1,0 +1,374 @@
+---
+// A staff ID badge hanging from a lanyard. Every measurement is a fraction of --w (the card
+// width), so the same markup scales from the large home-page badge down to the small one.
+import type { ImageMetadata } from 'astro';
+import { Image } from 'astro:assets';
+import LogoMark from './LogoMark.astro';
+import Ph from './Ph.astro';
+import { hasPlaceholder, useT, type Lang } from '../i18n';
+import type { PhotoFocus, Tone } from '../data/team';
+
+export interface IdCardPerson {
+  firstName: string;
+  lastName: string;
+  role: string;
+  tone: Tone;
+  photo?: ImageMetadata;
+  focus?: PhotoFocus;
+}
+
+interface Props {
+  person: IdCardPerson;
+  lang: Lang;
+  size?: 'l' | 's';
+  /** Makes the whole card a link to the person's profile. */
+  href?: string;
+  lanyard?: boolean;
+  /** Resting tilt in degrees; the card pivots from its slot. */
+  tilt?: number;
+  /** Small text printed in the colour field under the photo. */
+  tag?: string;
+  /** `sizes` for the card width (e.g. "(max-width: 899px) 190px, 300px"); scaled here to the photo. */
+  cardSizes?: string;
+  /** Load the portrait straight away (for a badge near the top of the page). */
+  eager?: boolean;
+  class?: string;
+}
+
+const {
+  person,
+  lang,
+  size = 'l',
+  href,
+  lanyard = true,
+  tilt = 0,
+  tag,
+  cardSizes,
+  eager = false,
+  class: className,
+} = Astro.props;
+
+const t = useT(lang);
+const name = `${person.firstName} ${person.lastName}`.trim();
+const label = hasPlaceholder(person.role) ? name : `${name}, ${person.role}`;
+
+// Place the photo inside the round portrait so the face lands at its centre (a touch above, as in
+// a passport photo), without ever exposing an edge of the image. Units: portrait diameter = 1.
+const PORTRAIT = 0.54;
+let photoStyle = '';
+let imgPx = 0;
+if (person.photo) {
+  const { x, y, zoom } = person.focus ?? { x: 0.5, y: 0.4, zoom: 1.15 };
+  const aspect = person.photo.width / person.photo.height;
+  const w = Math.max(1, aspect) * zoom;
+  const h = Math.max(1, 1 / aspect) * zoom;
+  const clamp = (v: number, min: number) => Math.min(0, Math.max(min, v));
+  const left = clamp(0.5 - x * w, 1 - w);
+  const top = clamp(0.46 - y * h, 1 - h);
+  const pct = (v: number) => `${(v * 100).toFixed(2)}%`;
+  photoStyle = `width:${pct(w)};height:${pct(h)};left:${pct(left)};top:${pct(top)};transform-origin:${pct(x)} ${pct(y)}`;
+  imgPx = PORTRAIT * w;
+}
+
+const baseWidth = size === 'l' ? 320 : 220;
+const toPhoto = (px: number) => Math.ceil(px * imgPx);
+const sizes = (cardSizes ?? `${baseWidth}px`).replace(/(\d+(?:\.\d+)?)px/g, (_, n) => `${toPhoto(Number(n))}px`);
+const widths = person.photo
+  ? [0.6, 1, 2, 3].map((d) => Math.ceil(toPhoto(baseWidth) * d)).filter((px) => px <= person.photo!.width)
+  : [];
+if (person.photo && widths.length < 3) widths.push(person.photo.width);
+
+const Tag = href ? 'a' : 'div';
+---
+
+<Tag
+  class:list={['id-card', `id-card--${size}`, `tone--${person.tone}`, className]}
+  style={`--tilt:${tilt}deg`}
+  href={href}
+  aria-label={href ? label : undefined}
+>
+  {lanyard && (
+    <span class="lanyard" aria-hidden="true">
+      <span class="strap"></span>
+      <span class="clip"></span>
+    </span>
+  )}
+
+  <span class="face">
+    <span class="field"></span>
+    <span class="slot" aria-hidden="true"></span>
+
+    <span class="portrait">
+      {person.photo ? (
+        <Image
+          src={person.photo}
+          alt={href ? '' : name}
+          widths={widths}
+          sizes={sizes}
+          loading={eager ? 'eager' : 'lazy'}
+          decoding="async"
+          style={photoStyle}
+        />
+      ) : (
+        <span class="portrait-ph"><LogoMark /></span>
+      )}
+    </span>
+
+    {tag && <span class="tag">{tag}</span>}
+
+    <span class="text">
+      <Ph class="role" text={person.role} lang={lang} />
+      <span class="name">
+        <span>{person.firstName}</span>
+        {person.lastName && <span>{person.lastName}</span>}
+      </span>
+    </span>
+
+    <span class="logo" aria-hidden="true">
+      <LogoMark class="logo-mark" />
+      <span class="logo-text">
+        <span>{t.hero.eyebrow}</span>
+        <span>Dr. Petriti &amp; Dr. Vlera</span>
+      </span>
+    </span>
+  </span>
+</Tag>
+
+<style>
+  .id-card {
+    --w: 320px;
+    --h: calc(var(--w) * 86 / 54);
+    /* Centre of the slot, which is the pivot of the badge */
+    --pivot: calc(var(--h) * 0.053);
+    position: relative;
+    display: block;
+    width: var(--w);
+    color: var(--ink);
+    transform: rotate(var(--tilt));
+    transform-origin: 50% var(--pivot);
+  }
+  .id-card--s {
+    --w: 220px;
+  }
+
+  .tone--crimson {
+    --tone: var(--crimson);
+    --on-tone: #fff;
+  }
+  .tone--crimson-deep {
+    --tone: var(--crimson-deep);
+    --on-tone: #fff;
+  }
+  .tone--ink {
+    --tone: var(--ink);
+    --on-tone: var(--paper);
+  }
+  .tone--blush {
+    --tone: var(--blush);
+    --on-tone: var(--crimson-deep);
+  }
+
+  /* ---------- Lanyard: a strap long enough to reach past the top of the section ---------- */
+  .lanyard {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% - var(--pivot));
+    width: calc(var(--w) * 0.09);
+    height: 100vh;
+    translate: -50% 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .strap {
+    position: absolute;
+    inset: 0 0 calc(var(--w) * 0.1);
+    background: var(--tone);
+  }
+  /* Metal clip: a plate crimped over the strap end, and a bar hooked through the slot */
+  .clip {
+    position: absolute;
+    left: 50%;
+    bottom: calc(var(--w) * 0.018);
+    width: calc(var(--w) * 0.12);
+    height: calc(var(--w) * 0.1);
+    translate: -50% 0;
+    border-radius: calc(var(--w) * 0.014);
+    background: #b5b2ae;
+    box-shadow:
+      inset 0 0 0 calc(var(--w) * 0.008) #d6d3cf,
+      0 1px 2px rgb(0 0 0 / 0.25);
+  }
+  .clip::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    width: calc(var(--w) * 0.03);
+    height: calc(var(--w) * 0.03);
+    translate: -50% 0;
+    background: #8f8b86;
+  }
+
+  /* ---------- Card body ---------- */
+  .face {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 54 / 86;
+    overflow: hidden;
+    border-radius: calc(var(--w) * 0.05);
+    background: #fff;
+    box-shadow:
+      0 0 0 1px rgb(0 0 0 / 0.08),
+      0 30px 50px -36px rgb(0 0 0 / 0.55);
+  }
+  .slot {
+    position: absolute;
+    top: 4%;
+    left: 39%;
+    width: 22%;
+    height: 2.6%;
+    border-radius: 999px;
+    background: var(--badge-hole, #fff);
+    box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.35);
+    z-index: 1;
+  }
+  /* The printed band: a quarter circle centred on the top-left corner */
+  .field {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    aspect-ratio: 1 / 1.08;
+    border-radius: 0 0 100% 0;
+    background: var(--tone);
+    transform-origin: 0 0;
+  }
+  .portrait {
+    position: absolute;
+    top: 13%;
+    left: 12%;
+    width: 54%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--stone);
+    box-shadow: 0 0 0 calc(var(--w) * 0.022) #fff;
+  }
+  .portrait :global(img) {
+    position: absolute;
+    max-width: none;
+  }
+  .portrait-ph {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: rgb(201 20 60 / 0.35);
+  }
+  .portrait-ph :global(svg) {
+    width: 38%;
+    height: auto;
+  }
+  .tag {
+    position: absolute;
+    top: calc(var(--w) * 0.81);
+    left: 12%;
+    font-size: calc(var(--w) * 0.034);
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--on-tone);
+  }
+
+  .text {
+    position: absolute;
+    left: 12%;
+    right: 10%;
+    bottom: calc(var(--w) * 0.185);
+    display: grid;
+    gap: calc(var(--w) * 0.028);
+  }
+  .text :global(.role) {
+    font-size: calc(var(--w) * 0.036);
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .name {
+    display: grid;
+    font-size: calc(var(--w) * 0.094);
+    font-weight: 700;
+    line-height: 0.96;
+    letter-spacing: -0.005em;
+    text-transform: uppercase;
+  }
+
+  .logo {
+    position: absolute;
+    left: 12%;
+    bottom: calc(var(--w) * 0.065);
+    display: flex;
+    align-items: center;
+    gap: calc(var(--w) * 0.025);
+  }
+  .logo :global(.logo-mark) {
+    width: calc(var(--w) * 0.075);
+    height: auto;
+    color: var(--crimson);
+  }
+  .logo-text {
+    display: grid;
+    font-size: calc(var(--w) * 0.028);
+    line-height: 1.25;
+  }
+  .logo-text span:first-child {
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .logo-text span:last-child {
+    color: var(--muted);
+  }
+
+  .id-card:focus-visible {
+    outline-offset: 6px;
+  }
+
+  /* ---------- Hover: the badge swings from its slot and settles ---------- */
+  @media (prefers-reduced-motion: no-preference) {
+    .field,
+    .portrait :global(img) {
+      transition: transform 0.9s var(--ease);
+    }
+    .id-card:is(:hover, :focus-visible) {
+      animation: swing 1.4s ease-out;
+    }
+    .id-card:is(:hover, :focus-visible) .field {
+      transform: scale(1.06);
+    }
+    .id-card:is(:hover, :focus-visible) .portrait :global(img) {
+      transform: scale(1.05);
+    }
+  }
+  @keyframes swing {
+    0% {
+      transform: rotate(var(--tilt));
+    }
+    22% {
+      transform: rotate(calc(var(--tilt) + 3.2deg));
+    }
+    48% {
+      transform: rotate(calc(var(--tilt) - 2deg));
+    }
+    72% {
+      transform: rotate(calc(var(--tilt) + 0.9deg));
+    }
+    100% {
+      transform: rotate(var(--tilt));
+    }
+  }
+</style>

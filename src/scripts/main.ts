@@ -541,61 +541,6 @@ if (booking) {
   });
 }
 
-/* ------------------------------------------------------------------ team drawer */
-$$('[data-drawer]').forEach((drawer) => {
-  const backdrop = $('[data-drawer-backdrop]');
-  const profiles = $$('[data-profile]', drawer);
-  const closeBtn = $<HTMLButtonElement>('[data-drawer-close]', drawer);
-  let lastFocus: HTMLElement | null = null;
-  let isOpen = false;
-
-  function open(id: string) {
-    if (!profiles.some((p) => p.dataset.profile === id)) return;
-    profiles.forEach((p) => (p.hidden = p.dataset.profile !== id));
-    drawer.hidden = false;
-    if (backdrop) backdrop.hidden = false;
-    drawer.scrollTop = 0;
-    requestAnimationFrame(() => {
-      drawer.classList.add('is-open');
-      backdrop?.classList.add('is-open');
-    });
-    isOpen = true;
-    lenis?.stop();
-    document.documentElement.style.overflow = 'hidden';
-    closeBtn?.focus({ preventScroll: true });
-    history.replaceState(null, '', `#${id}`);
-  }
-  function close() {
-    if (!isOpen) return;
-    isOpen = false;
-    drawer.classList.remove('is-open');
-    backdrop?.classList.remove('is-open');
-    lenis?.start();
-    document.documentElement.style.overflow = '';
-    history.replaceState(null, '', location.pathname);
-    window.setTimeout(() => {
-      if (isOpen) return;
-      drawer.hidden = true;
-      if (backdrop) backdrop.hidden = true;
-    }, reduced ? 0 : 800);
-    lastFocus?.focus({ preventScroll: true });
-  }
-
-  $$<HTMLButtonElement>('[data-member]').forEach((btn) =>
-    btn.addEventListener('click', () => {
-      lastFocus = btn;
-      open(btn.dataset.member ?? '');
-    }),
-  );
-  closeBtn?.addEventListener('click', close);
-  backdrop?.addEventListener('click', close);
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') close();
-  });
-  // Direct links such as /sq/ekipi/#dr-petriti open that profile
-  if (location.hash) open(decodeURIComponent(location.hash.slice(1)));
-});
-
 /* ------------------------------------------------------------------ gallery filter */
 $$('[data-gallery-filter]').forEach((root) => {
   const buttons = $$<HTMLButtonElement>('button[data-filter]', root);
@@ -702,7 +647,7 @@ function initMotion() {
   // The jump back happens in the same frame, so nothing visible changes.
   const startY = window.scrollY;
   const hash = decodeURIComponent(location.hash.slice(1));
-  const hashTarget = hash && !$(`[data-profile="${CSS.escape(hash)}"]`) ? document.getElementById(hash) : null;
+  const hashTarget = hash ? document.getElementById(hash) : null;
   if (startY) {
     lenis?.scrollTo(0, { immediate: true, force: true });
     window.scrollTo(0, 0);

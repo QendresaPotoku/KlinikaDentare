@@ -184,6 +184,8 @@ const sq = {
         bio: '[[Biografia e shkurtër e Dr. Petritit do të shtohet pasi klinika të dërgojë CV-në.]]',
         experience: '[[Vitet e përvojës dhe fushat kryesore të punës]]',
         education: '[[Universiteti, specializimet dhe trajnimet]]',
+        // One sentence quoted verbatim from bio/experience, written by the doctor. Empty: no pull quote.
+        quote: '',
       },
       {
         name: 'Dr. Vlera',
@@ -191,6 +193,8 @@ const sq = {
         bio: '[[Biografia e shkurtër e Dr. Vlerës do të shtohet pasi klinika të dërgojë CV-në.]]',
         experience: '[[Vitet e përvojës dhe fushat kryesore të punës]]',
         education: '[[Universiteti, specializimet dhe trajnimet]]',
+        // One sentence quoted verbatim from bio/experience, written by the doctor. Empty: no pull quote.
+        quote: '',
       },
     ],
   },
@@ -321,7 +325,6 @@ const sq = {
   team: {
     label: 'Ekipi',
     title: 'Ekipi i klinikës',
-    intro: 'Njerëzit që ju presin në klinikë. Klikoni mbi secilin për të lexuar më shumë.',
     groups: { doctors: 'Mjekët', staff: 'Ekipi' },
     openProfile: 'Hap profilin e',
     close: 'Mbyll',

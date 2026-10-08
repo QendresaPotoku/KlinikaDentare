@@ -79,7 +79,7 @@ switch (props.kind) {
     break;
   case 'team':
     title = `${t.team.title} · ${site.shortName}`;
-    description = t.team.intro;
+    description = t.meta.homeDescription;
     alternates = alternatesFor(paths.team);
     break;
   case 'gallery':

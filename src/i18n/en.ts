@@ -181,6 +181,7 @@ const en: typeof sq = {
         bio: "[[Dr. Petriti's short biography will be added once the clinic supplies the CV.]]",
         experience: '[[Years of experience and main areas of work]]',
         education: '[[University, specialisations and training]]',
+        quote: '',
       },
       {
         name: 'Dr. Vlera',
@@ -188,6 +189,7 @@ const en: typeof sq = {
         bio: "[[Dr. Vlera's short biography will be added once the clinic supplies the CV.]]",
         experience: '[[Years of experience and main areas of work]]',
         education: '[[University, specialisations and training]]',
+        quote: '',
       },
     ],
   },
@@ -315,7 +317,6 @@ const en: typeof sq = {
   team: {
     label: 'Team',
     title: 'The clinic team',
-    intro: 'The people who welcome you at the clinic. Select anyone to read more.',
     groups: { doctors: 'Doctors', staff: 'Team' },
     openProfile: 'Open the profile of',
     close: 'Close',
