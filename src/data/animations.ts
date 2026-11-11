@@ -11,11 +11,7 @@ export interface Animation {
 
 export const animations: Record<string, Animation> = {
   'single-implant': { width: 532, height: 300 },
-  'all-on-4': { width: 960, height: 720 },
-  'all-on-6': { width: 960, height: 720 },
-  'crown-lengthening': { width: 960, height: 330 },
   invisalign: { width: 960, height: 538 },
-  'laser-gingivectomy': { width: 720, height: 820 },
   'metal-ceramic-crowns': { width: 960, height: 540 },
   braces: { width: 720, height: 572 },
   'wisdom-teeth': { width: 960, height: 548 },

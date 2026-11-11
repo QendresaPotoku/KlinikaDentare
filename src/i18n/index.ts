@@ -56,13 +56,13 @@ const escape = (s: string) =>
 /**
  * Renders copy that may contain placeholders. Anything inside [[double brackets]] has not been
  * supplied by the clinic yet and is output as a visibly marked <span class="ph">.
+ * A \n in the text becomes a line break.
  */
 export function ph(text: string, lang: Lang = defaultLang): string {
   const label = escape(dictionaries[lang].common.placeholder);
-  return escape(text).replace(
-    /\[\[(.+?)\]\]/g,
-    (_, inner) => `<span class="ph" title="${label}">${inner}</span>`,
-  );
+  return escape(text)
+    .replace(/\[\[(.+?)\]\]/g, (_, inner) => `<span class="ph" title="${label}">${inner}</span>`)
+    .replace(/\n/g, '<br>');
 }
 
 export const hasPlaceholder = (text: string) => /\[\[.+?\]\]/.test(text);

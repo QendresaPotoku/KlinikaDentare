@@ -1,8 +1,9 @@
 ---
 /**
- * Sticky treatment navigation shown on every category and sub-treatment page.
- * Row 1: all categories. Row 2: the current category's overview + its sub-treatments.
- * It sits under the site header and slides up with it when the header hides on scroll.
+ * Treatment navigation for phones and tablets (below 1100px; TreatmentSidebar covers wider screens).
+ * A sticky bar under the site header names the current treatment and opens the full list;
+ * a second row holds the current category's overview and sub-treatments.
+ * It slides up with the header when the header hides on scroll.
  */
 import { useT, paths, type Lang } from '../i18n';
 import { treatments, type Treatment, type SubTreatment } from '../data/treatments';
@@ -14,31 +15,14 @@ const slug = treatment.copy[lang].slug;
 ---
 
 <nav class="tbar" aria-label={tp.barLabel} data-tbar>
-  <div class="row cats">
-    <ul class="scroll" data-tbar-scroll>
-      <li>
-        <a class="all" href={paths.treatments(lang)}>
-          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 1.5h5v5h-5zM9.5 1.5h5v5h-5zM1.5 9.5h5v5h-5zM9.5 9.5h5v5h-5z" /></svg>
-          {tp.back}
-        </a>
-      </li>
-      {treatments.map((tr, i) => {
-        const active = tr === treatment;
-        return (
-          <li>
-            <a
-              class="cat"
-              href={paths.treatment(lang, tr.copy[lang].slug)}
-              aria-current={active ? (sub ? 'true' : 'page') : undefined}
-              data-active={active ? '' : undefined}
-            >
-              <span class="num">{String(i + 1).padStart(2, '0')}</span>
-              {tr.copy[lang].name}
-            </a>
-          </li>
-        );
-      })}
-    </ul>
+  <div class="row pick-row">
+    <button class="pick" type="button" aria-expanded="false" aria-controls="tbar-panel" data-tbar-toggle>
+      <span class="pick-text">
+        <span class="pick-label">{tp.barLabel}</span>
+        <span class="pick-name">{treatment.copy[lang].name}</span>
+      </span>
+      <span class="pick-icon" aria-hidden="true"></span>
+    </button>
   </div>
 
   {treatment.children.length > 0 && (
@@ -64,18 +48,86 @@ const slug = treatment.copy[lang].slug;
       </ul>
     </div>
   )}
+
+  <div class="panel" id="tbar-panel" data-tbar-panel inert>
+    <div class="panel-clip">
+      <div class="panel-scroll" data-lenis-prevent>
+        <ul class="list">
+          {treatments.map((tr) => {
+            const active = tr === treatment;
+            const trSlug = tr.copy[lang].slug;
+            return (
+              <li class="item" data-active={active ? '' : undefined}>
+                <a class="item-link" href={paths.treatment(lang, trSlug)} aria-current={active && !sub ? 'page' : undefined}>
+                  <span>{tr.copy[lang].name}</span>
+                  {tr.children.length > 0 && <span class="item-count">{tr.children.length}</span>}
+                </a>
+                {active && tr.children.length > 0 && (
+                  <ul class="item-subs">
+                    {tr.children.map((s) => (
+                      <li>
+                        <a href={paths.subTreatment(lang, trSlug, s.copy[lang].slug)} aria-current={s === sub ? 'page' : undefined}>
+                          {s.copy[lang].name}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+        <a class="all" href={paths.treatments(lang)}>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 1.5h5v5h-5zM9.5 1.5h5v5h-5zM1.5 9.5h5v5h-5zM9.5 9.5h5v5h-5z" /></svg>
+          {tp.back}
+        </a>
+      </div>
+    </div>
+  </div>
 </nav>
+<div class="tbar-scrim" data-tbar-scrim aria-hidden="true"></div>
 
 <script>
-  // Expose the bar's height so sticky content further down can sit just below it.
   const bar = document.querySelector<HTMLElement>('[data-tbar]');
   if (bar) {
+    // Expose the bar's height so sticky content further down can sit just below it (0 when hidden on desktop).
+    // The open list is absolutely positioned, so it never counts towards this height.
     const setHeight = () => document.documentElement.style.setProperty('--tbar-h', `${bar.offsetHeight}px`);
     setHeight();
     new ResizeObserver(setHeight).observe(bar);
+
+    // Open and close the full list.
+    const toggle = bar.querySelector<HTMLButtonElement>('[data-tbar-toggle]');
+    const panel = bar.querySelector<HTMLElement>('[data-tbar-panel]');
+    const scrim = document.querySelector<HTMLElement>('[data-tbar-scrim]');
+    const setOpen = (open: boolean) => {
+      bar.classList.toggle('is-open', open);
+      scrim?.classList.toggle('is-open', open);
+      toggle?.setAttribute('aria-expanded', String(open));
+      if (panel) panel.inert = !open;
+      if (open) {
+        const current = panel?.querySelector<HTMLElement>('.item[data-active]');
+        const scroller = panel?.querySelector<HTMLElement>('.panel-scroll');
+        // Scroll only if the current treatment would otherwise be cut off at the bottom.
+        if (current && scroller) {
+          const bottom = current.getBoundingClientRect().bottom - scroller.getBoundingClientRect().top + scroller.scrollTop;
+          const limit = scroller.clientHeight;
+          if (bottom > limit) scroller.scrollTop = bottom - limit + 24;
+        }
+      }
+    };
+    toggle?.addEventListener('click', () => setOpen(!bar.classList.contains('is-open')));
+    scrim?.addEventListener('click', () => setOpen(false));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && bar.classList.contains('is-open')) {
+        setOpen(false);
+        toggle?.focus();
+      }
+    });
+    matchMedia('(min-width: 1101px)').addEventListener('change', (e) => e.matches && setOpen(false));
   }
 
-  // Bring the active item into view on narrow screens and fade the edges that overflow.
+  // Bring the active chip into view and fade the edges that overflow.
   document.querySelectorAll<HTMLElement>('[data-tbar-scroll]').forEach((el) => {
     const active = el.querySelector<HTMLElement>('[data-active]');
     if (active && el.scrollWidth > el.clientWidth) {
@@ -110,18 +162,91 @@ const slug = treatment.copy[lang].slug;
       -webkit-backdrop-filter: saturate(1.2) blur(14px);
     }
   }
-  /* Follow the header when it slides away on scroll */
-  :global(body:has(.site-header.is-hidden:not(.menu-open))) .tbar {
+  .tbar.is-open {
+    background: var(--paper);
+  }
+  /* Follow the header when it slides away on scroll (but stay put while the list is open) */
+  :global(body:has(.site-header.is-hidden:not(.menu-open))) .tbar:not(.is-open) {
     transform: translateY(calc(-1 * var(--header-h)));
   }
 
-  /* Rows scroll sideways on narrow screens; padding keeps items aligned with .container */
+  /* Rows line up with .container */
+  .pick-row,
+  .scroll,
+  .panel-scroll {
+    padding-inline: var(--gutter);
+  }
+
+  /* Current treatment + open button */
+  .pick {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-block: 12px;
+    text-align: left;
+  }
+  .pick-text {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+  .pick-label {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted-light);
+  }
+  .pick-name {
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .pick-icon {
+    flex: none;
+    position: relative;
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    transition: background-color 0.4s var(--ease), border-color 0.4s var(--ease), color 0.4s var(--ease);
+  }
+  .pick-icon::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    margin: -5px 0 0 -3.5px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg);
+    transition: transform 0.5s var(--ease), margin 0.5s var(--ease);
+  }
+  .is-open .pick-icon {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+  }
+  .is-open .pick-icon::before {
+    margin-top: -1.5px;
+    transform: rotate(-135deg);
+  }
+
+  /* Sub-treatment chips */
   .scroll {
     display: flex;
     align-items: center;
+    gap: 8px;
+    padding-block: 10px;
     overflow-x: auto;
     scrollbar-width: none;
-    padding-inline: max(var(--gutter), calc((100% - var(--max)) / 2 + var(--gutter)));
     scroll-padding-inline: var(--gutter);
   }
   .scroll::-webkit-scrollbar {
@@ -136,99 +261,21 @@ const slug = treatment.copy[lang].slug;
   .scroll.fade-start.fade-end {
     mask-image: linear-gradient(to right, transparent, #000 48px, #000 calc(100% - 48px), transparent);
   }
-  li {
+  .scroll li {
     flex: none;
   }
-
-  /* Categories */
-  .cats .scroll {
-    gap: clamp(22px, 2.4vw, 40px);
-  }
-  .all,
-  .cat {
-    position: relative;
-    display: inline-flex;
-    align-items: baseline;
-    gap: 8px;
-    padding-block: 18px;
-    font-size: 0.9375rem;
-    font-weight: 500;
-    white-space: nowrap;
-    color: var(--muted);
-    transition: color 0.4s var(--ease);
-  }
-  .all {
-    align-items: center;
-    padding-right: clamp(22px, 2.4vw, 40px);
-    border-right: 1px solid var(--line);
-    color: var(--ink);
-  }
-  .all svg {
-    width: 12px;
-    height: 12px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.3;
-  }
-  .num {
-    font-size: var(--fs-label);
-    letter-spacing: 0.1em;
-    color: var(--muted-light);
-    font-variant-numeric: tabular-nums;
-    transition: color 0.4s var(--ease);
-  }
-  .cat::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 2px;
-    background: var(--crimson);
-    transform: scaleX(0);
-    transform-origin: right;
-    transition: transform 0.6s var(--ease);
-  }
-  .all:hover,
-  .cat:hover,
-  .cat[data-active] {
-    color: var(--ink);
-  }
-  .all:hover {
-    color: var(--crimson);
-  }
-  .cat[data-active] .num {
-    color: var(--crimson);
-  }
-  .cat:hover::after,
-  .cat[data-active]::after {
-    transform: scaleX(1);
-    transform-origin: left;
-  }
-  .cat:not([data-active]):hover::after {
-    background: var(--line);
-  }
-
-  /* Sub-treatments */
   .subs {
     border-top: 1px solid var(--line);
-  }
-  .subs .scroll {
-    gap: 8px;
-    padding-block: 10px;
   }
   .chip {
     display: inline-flex;
     align-items: center;
-    min-height: 36px;
-    padding: 0 16px;
+    min-height: 34px;
+    padding: 0 14px;
     border: 1px solid var(--line);
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     white-space: nowrap;
-    transition:
-      color 0.4s var(--ease),
-      background-color 0.4s var(--ease),
-      border-color 0.4s var(--ease);
+    transition: color 0.4s var(--ease), background-color 0.4s var(--ease), border-color 0.4s var(--ease);
   }
   .chip:hover {
     border-color: var(--ink);
@@ -239,16 +286,136 @@ const slug = treatment.copy[lang].slug;
     color: var(--paper);
   }
 
-  @media (max-width: 760px) {
-    .all,
-    .cat {
-      padding-block: 15px;
-      font-size: 0.875rem;
+  /* Full list: drops down under the bar, height animates through the grid row */
+  .panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    display: grid;
+    grid-template-rows: 0fr;
+    background: var(--paper);
+    box-shadow: 0 28px 48px -28px rgb(23 23 23 / 0.35);
+    transition: grid-template-rows 0.55s var(--ease);
+  }
+  .is-open .panel {
+    grid-template-rows: 1fr;
+    border-top: 1px solid var(--line);
+  }
+  .panel-clip {
+    min-height: 0;
+    overflow: hidden;
+  }
+  .panel-scroll {
+    max-height: calc(100svh - var(--header-h) - var(--tbar-h, 64px) - 24px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-block: 8px 24px;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity 0.35s var(--ease), transform 0.55s var(--ease);
+  }
+  .is-open .panel-scroll {
+    opacity: 1;
+    transform: none;
+    transition-delay: 0.06s;
+  }
+  .item {
+    border-bottom: 1px solid var(--line);
+  }
+  .item-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-block: 15px;
+    font-size: 1rem;
+    line-height: 1.35;
+    transition: color 0.4s var(--ease);
+  }
+  .item-link:hover,
+  .item[data-active] .item-link {
+    color: var(--crimson);
+  }
+  .item[data-active] .item-link {
+    font-weight: 500;
+  }
+  .item-count {
+    flex: none;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 7px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .item-subs {
+    margin: -4px 0 14px 2px;
+  }
+  .item-subs a {
+    display: block;
+    padding: 7px 0 7px 16px;
+    border-left: 1px solid var(--line);
+    font-size: 0.9375rem;
+    color: var(--muted);
+  }
+  .item-subs a[aria-current='page'] {
+    color: var(--ink);
+    font-weight: 500;
+    border-left-color: var(--crimson);
+    box-shadow: inset 1px 0 0 var(--crimson);
+  }
+  .all {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+    font-size: var(--fs-label);
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .all svg {
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.3;
+  }
+
+  /* Dims the page behind the open list */
+  .tbar-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 89;
+    background: rgb(23 23 23 / 0.32);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s var(--ease);
+  }
+  .tbar-scrim.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Wide screens use the sidebar instead */
+  @media (min-width: 1101px) {
+    .tbar,
+    .tbar-scrim {
+      display: none;
     }
-    .chip {
-      min-height: 34px;
-      padding: 0 14px;
-      font-size: 0.8125rem;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .panel,
+    .panel-scroll,
+    .tbar-scrim {
+      transition: none;
     }
   }
 </style>

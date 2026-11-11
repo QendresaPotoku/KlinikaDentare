@@ -4,23 +4,23 @@ const content: Record<string, TreatmentContent> = {
   implants: {
     sq: {
       intro:
-        'Implantet dentare zëvendësojnë dhëmbët që mungojnë me dhëmbë fiks të ankoruar në kockën e nofullës. Qoftë një dhëmb apo një nofull e tërë, ju ndihmojmë të zgjidhni opsionin që u përshtatet.',
+        'Implantet dentare zëvendësojnë dhëmbët që mungojnë me një rrënjë artificiale të ankoruar në kockën e nofullës. Ato mund të zëvendësojnë një dhëmb, disa dhëmbë ose të mbajnë një urë a protezë, dhe ju ndihmojmë të gjeni zgjidhjen që ju përshtatet.',
       body: [
-        'Implantet u përshtaten shumicës së të rriturve që kanë humbur një ose më shumë dhëmbë dhe që kanë mishra të shëndetshëm dhe kockë të mjaftueshme, ose kockë që mund të rindërtohet. Për një hapësirë të vetme, një implant mban një kurorë dhe dhëmbët fqinjë mbeten të paprekur. Kur mungojnë ose janë të humbur shumica e dhëmbëve të një nofulle, një nofull e plotë dhëmbësh fiks mund të vendoset mbi katër implante (All-on-4) ose gjashtë implante (All-on-6), në vend të një proteze të lëvizshme.',
-        'Zgjidhja e duhur varet nga numri i dhëmbëve që mungojnë, sasia dhe cilësia e kockës, shëndeti juaj i përgjithshëm dhe pritshmëritë tuaja. Duhanpirja, diabeti i pakontrolluar dhe sëmundjet e mishrave mund të ndikojnë në shërim, prandaj i vlerësojmë që në fillim. Trajtimi zakonisht zgjat disa muaj nga vendosja deri te dhëmbët përfundimtarë, sepse kocka ka nevojë për kohë që të lidhet me implantet. Me kujdes të mirë në shtëpi dhe kontrolle të rregullta, implantet mund të zgjasin shumë vite.',
+        'Implantet u përshtaten shumicës së të rriturve që kanë humbur një ose më shumë dhëmbë dhe që kanë mishra të shëndetshëm dhe kockë të mjaftueshme, ose kockë që mund të rindërtohet. Për një hapësirë të vetme, një implant mban një kurorë dhe dhëmbët fqinjë mbeten të paprekur. Kur mungojnë disa dhëmbë, implantet mund të mbajnë një urë, ndërsa në një nofull me pak ose pa dhëmbë mund të ndihmojnë që proteza të qëndrojë më e sigurt.',
+        'Trajtimi ndjek disa faza të qarta. Fillimisht implanti vendoset në kockë me anestezi lokale. Pas një periudhe shërimi, zakonisht disa muaj, gjatë së cilës kocka lidhet me implantin, mbi të vendoset abutmenti (lidhësi). Në fund vendoset kurora, shpesh prej zirkoni. Plani i duhur varet nga numri i dhëmbëve që mungojnë, kocka në dispozicion, shëndeti juaj i përgjithshëm dhe pritshmëritë tuaja; duhanpirja, diabeti i pakontrolluar dhe sëmundjet e mishrave mund të ndikojnë në shërim, prandaj i vlerësojmë që në fillim. Me kujdes të mirë në shtëpi dhe kontrolle të rregullta, implantet mund të zgjasin shumë vite.',
       ],
       steps: [
         {
-          title: 'Konsulta dhe skanimi',
-          text: 'Ekzaminojmë gojën, shqyrtojmë historinë tuaj mjekësore dhe bëjmë një skanim 3D për të matur kockën.',
+          title: 'Konsulta dhe radiografia',
+          text: 'Ekzaminojmë gojën, shqyrtojmë historinë tuaj mjekësore dhe bëjmë një radiografi dhe, kur nevojitet, imazheri të mëtejshme për të vlerësuar kockën.',
         },
         {
-          title: 'Zgjedhja e opsionit',
-          text: 'Mjeku ju shpjegon cilat opsione ju përshtaten, implanti i vetëm, All-on-4 apo All-on-6, bashkë me afatet dhe planin e trajtimit me shkrim.',
+          title: 'Vendosja e implantit',
+          text: 'Me anestezi lokale, implanti vendoset në kockën e nofullës dhe lihet të shërohet, zakonisht për disa muaj.',
         },
         {
-          title: 'Trajtimi dhe kontrollet',
-          text: 'Implantet vendosen, lihen të shërohen dhe pajisen me dhëmbët përfundimtarë, të ndjekur nga kontrolle të rregullta.',
+          title: 'Abutmenti dhe kurora',
+          text: 'Pasi implanti të jetë lidhur me kockën, vendoset abutmenti dhe pastaj kurora përfundimtare, shpesh prej zirkoni, të ndjekura nga kontrolle të rregullta.',
         },
       ],
       faq: [
@@ -34,7 +34,11 @@ const content: Record<string, TreatmentContent> = {
         },
         {
           q: 'Po nëse nuk kam kockë të mjaftueshme?',
-          a: 'Në shumë raste kocka mund të rindërtohet me shtesë kockore ose ngritje të sinusit, para ose gjatë vendosjes së implantit. Për nofullën e plotë, implantet e pjerrëta si te All-on-4 shpesh e shmangin nevojën për shtesë kockore.',
+          a: 'Në shumë raste kocka mund të rindërtohet me shtesë kockore ose ngritje të sinusit, para ose gjatë vendosjes së implantit. Mjeku ju shpjegon nëse kjo nevojitet në rastin tuaj.',
+        },
+        {
+          q: 'Sa implante më duhen?',
+          a: 'Varet nga sa dhëmbë mungojnë dhe ku. Një implant zakonisht zëvendëson një dhëmb, ndërsa disa dhëmbë që mungojnë shpesh mund të zëvendësohen me një urë mbi më pak implante; mjeku e planifikon këtë me ju.',
         },
         {
           q: 'Cilat janë alternativat e implanteve?',
@@ -42,27 +46,27 @@ const content: Record<string, TreatmentContent> = {
         },
       ],
       seoDescription:
-        'Implante dentare në Prishtinë: implant i vetëm, All-on-4 dhe All-on-6 për nofull të plotë, të planifikuara me skanim 3D. Rezervoni një konsultë.',
+        'Implante dentare në Prishtinë: vendosja e implantit, abutmenti dhe kurora, shpesh prej zirkoni, për një ose më shumë dhëmbë që mungojnë.',
     },
     en: {
       intro:
-        'Dental implants replace missing teeth with fixed teeth anchored in the jawbone. Whether you are missing one tooth or a full arch, we help you choose the option that fits your mouth and your plans.',
+        'Dental implants replace missing teeth with an artificial root anchored in the jawbone. They can replace a single tooth or several teeth, or support a bridge or denture, and we help you find the approach that suits you.',
       body: [
-        'Implants suit most adults who have lost one or more teeth and have healthy gums and enough jawbone, or bone that can be rebuilt. For a single gap, one implant carries one crown and the neighbouring teeth are left untouched. When most or all teeth in a jaw are missing or failing, a full arch of fixed teeth can sit on four implants (All-on-4) or six implants (All-on-6), instead of a removable denture.',
-        'The right option depends on how many teeth are missing, the amount and quality of bone, your general health and your expectations. Smoking, uncontrolled diabetes and gum disease can affect healing, so we assess them first. Treatment usually takes a few months from placement to final teeth, because the bone needs time to bond with the implants. With good home care and regular check-ups, implants can last for many years.',
+        'Implants suit most adults who have lost one or more teeth and have healthy gums and enough jawbone, or bone that can be rebuilt. For a single gap, one implant carries one crown and the neighbouring teeth are left untouched. Where several teeth are missing, implants can support a bridge, and in a jaw with few or no teeth they can help hold a denture more securely.',
+        'Treatment follows clear stages. First the implant is placed in the bone under local anaesthetic. After a healing period of usually a few months, while the bone bonds with the implant, an abutment (the connector) is attached to it. Finally the crown is fitted on top, often made of zirconia. The right plan depends on how many teeth are missing, the bone available, your general health and your expectations; smoking, uncontrolled diabetes and gum disease can affect healing, so we assess them first. With good home care and regular check-ups, implants can last for many years.',
       ],
       steps: [
         {
-          title: 'Consultation and scan',
-          text: 'We examine your mouth, review your medical history and take a 3D scan to measure the bone.',
+          title: 'Consultation and X-ray',
+          text: 'We examine your mouth, review your medical history and take an X-ray and, where needed, further imaging to assess the bone.',
         },
         {
-          title: 'Choosing your option',
-          text: 'Your dentist explains which options suit you, a single implant, All-on-4 or All-on-6, and gives you the timeline and treatment plan in writing.',
+          title: 'Placing the implant',
+          text: 'Under local anaesthetic, the implant is placed in the jawbone and left to heal, usually for a few months.',
         },
         {
-          title: 'Treatment and follow-up',
-          text: 'The implants are placed, allowed to heal and fitted with their final teeth, followed by regular check-ups.',
+          title: 'Abutment and crown',
+          text: 'Once the implant has bonded with the bone, the abutment is attached and the final crown, often zirconia, is fitted, followed by regular check-ups.',
         },
       ],
       faq: [
@@ -76,7 +80,11 @@ const content: Record<string, TreatmentContent> = {
         },
         {
           q: 'What if I don’t have enough bone?',
-          a: 'In many cases bone can be rebuilt with a bone graft or sinus lift, before or during implant placement. For a full arch, angled implants as used in All-on-4 can often avoid grafting.',
+          a: 'In many cases bone can be rebuilt with a bone graft or sinus lift, before or during implant placement. Your dentist will explain whether this is needed in your case.',
+        },
+        {
+          q: 'How many implants will I need?',
+          a: 'It depends on how many teeth are missing and where. One implant usually replaces one tooth, while several missing teeth can often be replaced with a bridge on fewer implants; your dentist will plan this with you.',
         },
         {
           q: 'What are the alternatives to implants?',
@@ -84,27 +92,27 @@ const content: Record<string, TreatmentContent> = {
         },
       ],
       seoDescription:
-        'Dental implants in Prishtina: single implants, All-on-4 and All-on-6 full-arch solutions, planned with 3D imaging. Book a consultation.',
+        'Dental implants in Prishtina: implant placement, abutment and crown, often zirconia, to replace one or more missing teeth. Book a consultation.',
     },
     de: {
       intro:
-        'Zahnimplantate ersetzen fehlende Zähne durch feste Zähne, die im Kieferknochen verankert sind. Ob ein einzelner Zahn oder ein ganzer Kiefer fehlt: Wir helfen Ihnen, die passende Lösung zu wählen.',
+        'Zahnimplantate ersetzen fehlende Zähne durch eine künstliche Wurzel, die im Kieferknochen verankert ist. Sie können einen oder mehrere Zähne ersetzen oder eine Brücke bzw. Prothese tragen, und wir helfen Ihnen, die passende Lösung zu finden.',
       body: [
-        'Implantate eignen sich für die meisten Erwachsenen, die einen oder mehrere Zähne verloren haben und gesundes Zahnfleisch sowie ausreichend Kieferknochen haben, oder Knochen, der aufgebaut werden kann. Bei einer einzelnen Lücke trägt ein Implantat eine Krone, und die Nachbarzähne bleiben unberührt. Fehlen die meisten oder alle Zähne eines Kiefers, kann ein fester Zahnbogen auf vier Implantaten (All-on-4) oder sechs Implantaten (All-on-6) befestigt werden, statt einer herausnehmbaren Prothese.',
-        'Welche Lösung passt, hängt davon ab, wie viele Zähne fehlen, wie viel Knochen vorhanden ist, von Ihrer allgemeinen Gesundheit und Ihren Erwartungen. Rauchen, schlecht eingestellter Diabetes und Parodontitis können die Heilung beeinträchtigen, deshalb klären wir diese Punkte zuerst. Vom Setzen bis zu den endgültigen Zähnen vergehen meist einige Monate, weil der Knochen Zeit braucht, um mit den Implantaten zu verwachsen. Mit guter Pflege und regelmäßigen Kontrollen können Implantate viele Jahre halten.',
+        'Implantate eignen sich für die meisten Erwachsenen, die einen oder mehrere Zähne verloren haben und gesundes Zahnfleisch sowie ausreichend Kieferknochen haben, oder Knochen, der aufgebaut werden kann. Bei einer einzelnen Lücke trägt ein Implantat eine Krone, und die Nachbarzähne bleiben unberührt. Fehlen mehrere Zähne, können Implantate eine Brücke tragen, und in einem zahnarmen oder zahnlosen Kiefer können sie einer Prothese besseren Halt geben.',
+        'Die Behandlung verläuft in klaren Schritten. Zuerst wird das Implantat unter örtlicher Betäubung in den Knochen gesetzt. Nach einer Einheilzeit von meist einigen Monaten, in der der Knochen mit dem Implantat verwächst, wird das Abutment (das Verbindungsstück) aufgesetzt. Zum Schluss wird die Krone eingesetzt, häufig aus Zirkon. Welcher Plan passt, hängt davon ab, wie viele Zähne fehlen, wie viel Knochen vorhanden ist, von Ihrer allgemeinen Gesundheit und Ihren Erwartungen; Rauchen, schlecht eingestellter Diabetes und Parodontitis können die Heilung beeinträchtigen, deshalb klären wir diese Punkte zuerst. Mit guter Pflege und regelmäßigen Kontrollen können Implantate viele Jahre halten.',
       ],
       steps: [
         {
-          title: 'Beratung und Scan',
-          text: 'Wir untersuchen Ihren Mund, besprechen Ihre Krankengeschichte und fertigen eine 3D-Aufnahme an, um den Knochen zu vermessen.',
+          title: 'Beratung und Röntgen',
+          text: 'Wir untersuchen Ihren Mund, besprechen Ihre Krankengeschichte und erstellen ein Röntgenbild und bei Bedarf weitere Aufnahmen, um den Knochen zu beurteilen.',
         },
         {
-          title: 'Die passende Lösung',
-          text: 'Ihr Zahnarzt erklärt Ihnen, welche Möglichkeiten für Sie infrage kommen, Einzelimplantat, All-on-4 oder All-on-6, und gibt Ihnen Zeitplan und Behandlungsplan schriftlich mit.',
+          title: 'Setzen des Implantats',
+          text: 'Unter örtlicher Betäubung wird das Implantat in den Kieferknochen gesetzt und heilt dann ein, meist über einige Monate.',
         },
         {
-          title: 'Behandlung und Nachsorge',
-          text: 'Die Implantate werden gesetzt, heilen ein und erhalten ihre endgültigen Zähne, danach folgen regelmäßige Kontrollen.',
+          title: 'Abutment und Krone',
+          text: 'Ist das Implantat mit dem Knochen verwachsen, wird das Abutment aufgesetzt und die endgültige Krone, häufig aus Zirkon, eingesetzt; danach folgen regelmäßige Kontrollen.',
         },
       ],
       faq: [
@@ -118,7 +126,11 @@ const content: Record<string, TreatmentContent> = {
         },
         {
           q: 'Was, wenn nicht genug Knochen vorhanden ist?',
-          a: 'In vielen Fällen lässt sich der Knochen durch einen Knochenaufbau oder Sinuslift vor oder während der Implantation aufbauen. Bei einem ganzen Kiefer können schräg gesetzte Implantate wie bei All-on-4 einen Knochenaufbau oft vermeiden.',
+          a: 'In vielen Fällen lässt sich der Knochen durch einen Knochenaufbau oder Sinuslift vor oder während der Implantation aufbauen. Ihr Zahnarzt erklärt Ihnen, ob das in Ihrem Fall nötig ist.',
+        },
+        {
+          q: 'Wie viele Implantate brauche ich?',
+          a: 'Das hängt davon ab, wie viele Zähne wo fehlen. Ein Implantat ersetzt meist einen Zahn, während mehrere fehlende Zähne oft mit einer Brücke auf weniger Implantaten ersetzt werden können; Ihr Zahnarzt plant das mit Ihnen.',
         },
         {
           q: 'Welche Alternativen zu Implantaten gibt es?',
@@ -126,7 +138,7 @@ const content: Record<string, TreatmentContent> = {
         },
       ],
       seoDescription:
-        'Zahnimplantate in Prishtina: Einzelimplantate, All-on-4 und All-on-6 für den ganzen Kiefer, mit 3D-Planung. Vereinbaren Sie eine Beratung.',
+        'Zahnimplantate in Prishtina: Implantat, Abutment und Krone, häufig aus Zirkon, als Ersatz für einen oder mehrere fehlende Zähne. Beratung vereinbaren.',
     },
   },
 
@@ -145,8 +157,8 @@ const content: Record<string, TreatmentContent> = {
           text: 'Ekzaminojmë hapësirën, mishrat dhe dhëmbët fqinjë dhe bisedojmë për historinë tuaj mjekësore dhe pritshmëritë.',
         },
         {
-          title: 'Skanimi 3D dhe plani',
-          text: 'Një radiografi 3D tregon lartësinë dhe gjerësinë e kockës, që pozicioni i implantit të planifikohet me saktësi.',
+          title: 'Radiografia dhe plani',
+          text: 'Radiografia dhe, kur nevojitet, imazheria e mëtejshme tregojnë lartësinë dhe gjerësinë e kockës, që pozicioni i implantit të planifikohet me saktësi.',
         },
         {
           title: 'Vendosja e implantit',
@@ -158,7 +170,7 @@ const content: Record<string, TreatmentContent> = {
         },
         {
           title: 'Vendosja e kurorës',
-          text: 'Kur implanti është i qëndrueshëm, merren masat ose një skanim digjital dhe kurora juaj vendoset e përshtatet me kafshimin.',
+          text: 'Kur implanti është i qëndrueshëm, vendoset abutmenti, merren masat ose një skanim digjital dhe kurora juaj vendoset e përshtatet me kafshimin.',
         },
         {
           title: 'Kontrollet',
@@ -188,11 +200,11 @@ const content: Record<string, TreatmentContent> = {
         },
         {
           q: 'A ka rreziqe?',
-          a: 'Si te çdo ndërhyrje kirurgjikale, ka një rrezik të vogël infeksioni dhe, rrallë, të irritimit të një nervi që shkakton mpirje, ose të prekjes së sinusit në nofullën e sipërme. Planifikimi i kujdesshëm me skanim 3D i ul këto rreziqe, dhe ne jua shpjegojmë para trajtimit.',
+          a: 'Si te çdo ndërhyrje kirurgjikale, ka një rrezik të vogël infeksioni dhe, rrallë, të irritimit të një nervi që shkakton mpirje, ose të prekjes së sinusit në nofullën e sipërme. Planifikimi i kujdesshëm me radiografi dhe, kur nevojitet, imazheri të mëtejshme i ul këto rreziqe, dhe ne jua shpjegojmë para trajtimit.',
         },
       ],
       seoDescription:
-        'Implant i vetëm në Prishtinë: zëvendësoni një dhëmb që mungon me implant dhe kurorë të personalizuar, të planifikuar me skanim 3D.',
+        'Implant i vetëm në Prishtinë: zëvendësoni një dhëmb që mungon me implant, abutment dhe kurorë, shpesh prej zirkoni.',
     },
     en: {
       intro:
@@ -208,8 +220,8 @@ const content: Record<string, TreatmentContent> = {
           text: 'We examine the gap, your gums and the neighbouring teeth, and talk through your medical history and expectations.',
         },
         {
-          title: '3D scan and plan',
-          text: 'A 3D X-ray shows the height and width of the bone, so the implant position can be planned precisely.',
+          title: 'X-ray and plan',
+          text: 'An X-ray and, where needed, further imaging show the height and width of the bone, so the implant position can be planned precisely.',
         },
         {
           title: 'Implant placement',
@@ -221,7 +233,7 @@ const content: Record<string, TreatmentContent> = {
         },
         {
           title: 'Crown fitting',
-          text: 'Once the implant is stable, impressions or a digital scan are taken and your crown is fitted and adjusted to your bite.',
+          text: 'Once the implant is stable, the abutment is attached, impressions or a digital scan are taken and your crown is fitted and adjusted to your bite.',
         },
         {
           title: 'Check-ups',
@@ -251,11 +263,11 @@ const content: Record<string, TreatmentContent> = {
         },
         {
           q: 'Are there any risks?',
-          a: 'As with any surgery, there is a small risk of infection and, rarely, of irritating a nerve, which can cause numbness, or of involving the sinus in the upper jaw. Careful 3D planning reduces these risks, and we explain them before treatment.',
+          a: 'As with any surgery, there is a small risk of infection and, rarely, of irritating a nerve, which can cause numbness, or of involving the sinus in the upper jaw. Careful planning with X-rays and, where needed, further imaging reduces these risks, and we explain them before treatment.',
         },
       ],
       seoDescription:
-        'Single dental implant in Prishtina: replace one missing tooth with an implant and custom crown, planned with 3D imaging. Book a consultation.',
+        'Single dental implant in Prishtina: replace one missing tooth with an implant, abutment and custom crown, often zirconia. Book a consultation.',
     },
     de: {
       intro:
@@ -271,8 +283,8 @@ const content: Record<string, TreatmentContent> = {
           text: 'Wir untersuchen die Lücke, Ihr Zahnfleisch und die Nachbarzähne und besprechen Ihre Krankengeschichte und Erwartungen.',
         },
         {
-          title: '3D-Aufnahme und Planung',
-          text: 'Eine 3D-Röntgenaufnahme zeigt Höhe und Breite des Knochens, sodass die Position des Implantats genau geplant werden kann.',
+          title: 'Röntgen und Planung',
+          text: 'Ein Röntgenbild und bei Bedarf weitere Aufnahmen zeigen Höhe und Breite des Knochens, sodass die Position des Implantats genau geplant werden kann.',
         },
         {
           title: 'Implantation',
@@ -284,7 +296,7 @@ const content: Record<string, TreatmentContent> = {
         },
         {
           title: 'Einsetzen der Krone',
-          text: 'Ist das Implantat stabil, wird ein Abdruck oder digitaler Scan genommen und Ihre Krone eingesetzt und an Ihren Biss angepasst.',
+          text: 'Ist das Implantat stabil, wird das Abutment aufgesetzt, ein Abdruck oder digitaler Scan genommen und Ihre Krone eingesetzt und an Ihren Biss angepasst.',
         },
         {
           title: 'Kontrollen',
@@ -314,392 +326,11 @@ const content: Record<string, TreatmentContent> = {
         },
         {
           q: 'Gibt es Risiken?',
-          a: 'Wie bei jedem chirurgischen Eingriff besteht ein geringes Risiko einer Infektion und selten einer Nervenreizung mit Taubheitsgefühl oder, im Oberkiefer, einer Beteiligung der Kieferhöhle. Eine sorgfältige 3D-Planung verringert diese Risiken, und wir erklären sie Ihnen vor der Behandlung.',
+          a: 'Wie bei jedem chirurgischen Eingriff besteht ein geringes Risiko einer Infektion und selten einer Nervenreizung mit Taubheitsgefühl oder, im Oberkiefer, einer Beteiligung der Kieferhöhle. Eine sorgfältige Planung mit Röntgenbildern und bei Bedarf weiteren Aufnahmen verringert diese Risiken, und wir erklären sie Ihnen vor der Behandlung.',
         },
       ],
       seoDescription:
-        'Einzelimplantat in Prishtina: einen fehlenden Zahn mit Implantat und individueller Krone ersetzen, mit 3D-Planung. Jetzt Beratung vereinbaren.',
-    },
-  },
-
-  'all-on-4': {
-    sq: {
-      intro:
-        'All-on-4 ju jep një nofull të plotë dhëmbësh fiks të mbështetur mbi katër implante. Është menduar për ata që kanë humbur shumicën ose të gjithë dhëmbët e një nofulle, ose dhëmbët e të cilëve nuk mund të shpëtohen.',
-      body: [
-        'Te All-on-4, dy implante vendosen drejt në pjesën e përparme të nofullës dhe dy në pjesën e pasme vendosen të pjerrëta. Implantet e pjerrëta janë më të gjata dhe shfrytëzojnë kockën më të dendur më përpara, çka në shumë raste e shmang nevojën për shtesë kockore ose ngritje të sinusit, edhe kur kocka është tretur. Mbi katër implantet fiksohet me vida një urë e plotë dhëmbësh, e cila nuk hiqet në shtëpi si një protezë. Meqë dhëmbët janë fiks, shumica e njerëzve e ndiejnë të ngrënit, të folurit dhe buzëqeshjen shumë më natyrshëm se me një protezë që lëviz.',
-        'Dhëmbët që nuk mund të shpëtohen hiqen dhe implantet zakonisht vendosen në të njëjtën seancë, e cila për një nofull zgjat zakonisht disa orë. Nëse implantet janë mjaftueshëm të qëndrueshëm, shpesh brenda pak ditësh vendoset një urë fikse e përkohshme, që të mos mbeteni pa dhëmbë. Pas një periudhe shërimi zakonisht prej tre deri në gjashtë muajsh punohet ura përfundimtare. Në ditët e para kompresat e ftohta e lehtësojnë ënjtjen dhe do të hani ushqime të buta. Me pastrim të përditshëm, edhe nën urë, dhe kontrolle të rregullta, rezultati mund të zgjasë shumë vite.',
-      ],
-      steps: [
-        {
-          title: 'Konsulta',
-          text: 'Ekzaminojmë gojën, bisedojmë për historinë tuaj mjekësore dhe për atë që prisni nga dhëmbët e rinj.',
-        },
-        {
-          title: 'Skanimi 3D dhe plani',
-          text: 'Me radiografi 3D dhe skanime digjitale planifikohet pozicioni dhe këndi i çdo implanti, si dhe forma e dhëmbëve të rinj.',
-        },
-        {
-          title: 'Ndërhyrja',
-          text: 'Me anestezi lokale, dhe me sedim nëse nevojitet, hiqen dhëmbët e dëmtuar dhe vendosen katër implantet.',
-        },
-        {
-          title: 'Ura e përkohshme',
-          text: 'Kur implantet janë mjaftueshëm të qëndrueshëm, fiksohet një urë e përkohshme, zakonisht brenda pak ditësh.',
-        },
-        {
-          title: 'Ura përfundimtare',
-          text: 'Pasi implantet të jenë lidhur me kockën, zakonisht pas tre deri në gjashtë muajsh, punohet dhe vendoset ura e përhershme.',
-        },
-        {
-          title: 'Kujdesi pas trajtimit',
-          text: 'Ju tregojmë si ta pastroni nën urë dhe ju presim për kontrolle dhe pastrime profesionale të rregullta.',
-        },
-      ],
-      faq: [
-        {
-          q: 'Cili është ndryshimi mes All-on-4 dhe All-on-6?',
-          a: 'All-on-4 përdor katër implante, me dy të pasmet të pjerrëta, çka shpesh lejon trajtim pa shtesë kockore. All-on-6 e shpërndan ngarkesën mbi gjashtë implante, por zakonisht kërkon më shumë kockë. Asnjëra nuk është më e mirë për të gjithë; mjeku ju rekomandon njërën sipas skanimit tuaj.',
-        },
-        {
-          q: 'A dhemb ndërhyrja?',
-          a: 'Ndërhyrja bëhet me anestezi lokale, dhe nëse keni ankth mund të diskutohet sedimi. Ënjtja dhe shqetësimi për disa ditë janë të zakonshme dhe zakonisht kontrollohen me qetësues të dhimbjes.',
-        },
-        {
-          q: 'A mund të ha normalisht?',
-          a: 'Në javët e para do të hani ushqime të buta ndërsa implantet shërohen. Me urën përfundimtare, shumica e njerëzve mund të hanë ushqim normal dhe të larmishëm.',
-        },
-        {
-          q: 'Kujt nuk i përshtatet All-on-4?',
-          a: 'Duhanpirja e rëndë, diabeti i pakontrolluar, disa ilaçe që ndikojnë te kocka dhe kocka shumë e pakët mund ta bëjnë trajtimin më të rrezikshëm ose të papërshtatshëm. Çdo rast e vlerësojmë veçmas dhe ju shpjegojmë alternativat.',
-        },
-        {
-          q: 'Kur mund të kthehem në punë?',
-          a: 'Shumë njerëz kthehen në një punë zyre brenda pak ditësh, pasi të ketë rënë ënjtja. Kjo varet nga puna juaj, nga shtrirja e ndërhyrjes dhe nga si ndiheni, prandaj planifikoni disa ditë të qeta.',
-        },
-        {
-          q: 'Sa zgjasin implantet dhe ura?',
-          a: 'Me kujdes të mirë, vetë implantet mund të zgjasin dekada. Ura konsumohet me përdorimin si çdo punim dentar dhe pas disa vitesh mund të ketë nevojë për riparim ose zëvendësim.',
-        },
-      ],
-      seoDescription:
-        'All-on-4 në Prishtinë: një nofull e plotë dhëmbësh fiks mbi katër implante, shpesh pa shtesë kockore. Trajtim i planifikuar me skanim 3D.',
-    },
-    en: {
-      intro:
-        'All-on-4 gives you a full arch of fixed teeth supported by four implants. It is designed for people who have lost most or all of their teeth in one jaw, or whose remaining teeth cannot be saved.',
-      body: [
-        'In All-on-4, two implants are placed upright at the front of the jaw and the two at the back are tilted at an angle. The angled implants are longer and use the denser bone further forward, which in many cases avoids the need for bone grafting or a sinus lift, even where bone has shrunk. A full bridge of teeth is screwed onto the four implants; unlike a denture, it is not taken out at home. Because the teeth are fixed, most people find that eating, speaking and smiling feel much more natural than with a loose denture.',
-        'Any teeth that cannot be saved are removed and the implants are usually placed in the same session, which for one jaw typically takes a few hours. If the implants are stable enough, a provisional fixed bridge is often fitted within a few days, so you are not left without teeth. After a healing period of usually three to six months, the final bridge is made. In the first days, cold compresses ease the swelling and you keep to soft food. With daily cleaning, including under the bridge, and regular check-ups, the result can last for many years.',
-      ],
-      steps: [
-        {
-          title: 'Consultation',
-          text: 'We examine your mouth, discuss your medical history and ask what you expect from your new teeth.',
-        },
-        {
-          title: '3D scan and planning',
-          text: 'A 3D X-ray and digital scans are used to plan the position and angle of each implant and the shape of your new teeth.',
-        },
-        {
-          title: 'Surgery',
-          text: 'Under local anaesthesia, with sedation if needed, any failing teeth are removed and the four implants are placed.',
-        },
-        {
-          title: 'Provisional bridge',
-          text: 'When the implants are stable enough, a temporary fixed bridge is attached, usually within a few days.',
-        },
-        {
-          title: 'Final bridge',
-          text: 'Once the implants have bonded with the bone, usually after three to six months, the permanent bridge is made and fitted.',
-        },
-        {
-          title: 'Aftercare',
-          text: 'We show you how to clean under the bridge and see you for regular check-ups and professional cleaning.',
-        },
-      ],
-      faq: [
-        {
-          q: 'What is the difference between All-on-4 and All-on-6?',
-          a: 'All-on-4 uses four implants, with the back two angled, which often allows treatment without bone grafting. All-on-6 spreads the load over six implants but usually needs more bone. Neither is better for everyone; your dentist will recommend one based on your scan.',
-        },
-        {
-          q: 'Does the surgery hurt?',
-          a: 'It is done under local anaesthesia, and sedation can be discussed if you feel anxious. Swelling and discomfort for several days are common and are usually managed with painkillers.',
-        },
-        {
-          q: 'Will I be able to eat normally?',
-          a: 'In the first weeks you will eat soft foods while the implants heal. With the final bridge, most people can eat a normal, varied diet.',
-        },
-        {
-          q: 'Who is All-on-4 not suitable for?',
-          a: 'Heavy smoking, uncontrolled diabetes, some medicines that affect the bone and very little bone can make treatment riskier or unsuitable. We assess each case individually and explain the alternatives.',
-        },
-        {
-          q: 'How soon can I go back to work?',
-          a: 'Many people return to desk work within a few days, once the swelling has settled. It depends on your job, how extensive the surgery was and how you feel, so plan a few quiet days.',
-        },
-        {
-          q: 'How long do the implants and the bridge last?',
-          a: 'With good care, the implants themselves can last for decades. The bridge wears with use like any dental work and may need repair or renewal after a number of years.',
-        },
-      ],
-      seoDescription:
-        'All-on-4 dental implants in Prishtina: a full arch of fixed teeth on four implants, often without bone grafting. Planned with 3D imaging.',
-    },
-    de: {
-      intro:
-        'Mit All-on-4 erhalten Sie einen kompletten festen Zahnbogen auf vier Implantaten. Die Lösung richtet sich an Menschen, denen die meisten oder alle Zähne eines Kiefers fehlen oder deren restliche Zähne nicht mehr zu erhalten sind.',
-      body: [
-        'Bei All-on-4 werden zwei Implantate im vorderen Kieferbereich gerade gesetzt, die beiden hinteren schräg geneigt. Die schrägen Implantate sind länger und nutzen den dichteren Knochen weiter vorne, wodurch sich ein Knochenaufbau oder Sinuslift in vielen Fällen vermeiden lässt, auch wenn der Knochen bereits zurückgegangen ist. Auf die vier Implantate wird eine vollständige Zahnbrücke verschraubt; anders als eine Prothese wird sie zu Hause nicht herausgenommen. Da die Zähne fest sitzen, empfinden die meisten Menschen Essen, Sprechen und Lächeln als deutlich natürlicher als mit einer lockeren Prothese.',
-        'Nicht erhaltungswürdige Zähne werden entfernt, und die Implantate werden meist in derselben Sitzung gesetzt, die für einen Kiefer in der Regel einige Stunden dauert. Sind die Implantate stabil genug, wird oft innerhalb weniger Tage eine feste provisorische Brücke eingesetzt, damit Sie nicht ohne Zähne sind. Nach einer Einheilzeit von meist drei bis sechs Monaten wird die endgültige Brücke gefertigt. In den ersten Tagen lindern kühlende Kompressen die Schwellung, und Sie essen weiche Kost. Mit täglicher Reinigung, auch unter der Brücke, und regelmäßigen Kontrollen kann das Ergebnis viele Jahre halten.',
-      ],
-      steps: [
-        {
-          title: 'Beratung',
-          text: 'Wir untersuchen Ihren Mund, besprechen Ihre Krankengeschichte und fragen, was Sie sich von Ihren neuen Zähnen wünschen.',
-        },
-        {
-          title: '3D-Aufnahme und Planung',
-          text: 'Mit 3D-Röntgen und digitalen Scans werden Position und Winkel jedes Implantats sowie die Form Ihrer neuen Zähne geplant.',
-        },
-        {
-          title: 'Eingriff',
-          text: 'Unter örtlicher Betäubung, bei Bedarf mit Sedierung, werden nicht erhaltbare Zähne entfernt und die vier Implantate gesetzt.',
-        },
-        {
-          title: 'Provisorische Brücke',
-          text: 'Sind die Implantate stabil genug, wird eine feste provisorische Brücke befestigt, meist innerhalb weniger Tage.',
-        },
-        {
-          title: 'Endgültige Brücke',
-          text: 'Nachdem die Implantate mit dem Knochen verwachsen sind, meist nach drei bis sechs Monaten, wird die definitive Brücke gefertigt und eingesetzt.',
-        },
-        {
-          title: 'Nachsorge',
-          text: 'Wir zeigen Ihnen, wie Sie unter der Brücke reinigen, und sehen Sie regelmäßig zu Kontrollen und professioneller Reinigung.',
-        },
-      ],
-      faq: [
-        {
-          q: 'Was ist der Unterschied zwischen All-on-4 und All-on-6?',
-          a: 'All-on-4 nutzt vier Implantate, die hinteren beiden schräg gesetzt, was oft eine Behandlung ohne Knochenaufbau ermöglicht. All-on-6 verteilt die Last auf sechs Implantate, benötigt aber meist mehr Knochen. Keine Variante ist für alle besser; Ihr Zahnarzt empfiehlt Ihnen eine auf Grundlage Ihrer Aufnahme.',
-        },
-        {
-          q: 'Ist der Eingriff schmerzhaft?',
-          a: 'Er erfolgt unter örtlicher Betäubung, und bei Angst kann eine Sedierung besprochen werden. Schwellungen und Beschwerden über einige Tage sind üblich und lassen sich meist mit Schmerzmitteln gut behandeln.',
-        },
-        {
-          q: 'Kann ich normal essen?',
-          a: 'In den ersten Wochen essen Sie weiche Kost, während die Implantate einheilen. Mit der endgültigen Brücke können die meisten Menschen wieder normal und abwechslungsreich essen.',
-        },
-        {
-          q: 'Für wen ist All-on-4 nicht geeignet?',
-          a: 'Starkes Rauchen, schlecht eingestellter Diabetes, bestimmte Medikamente, die den Knochen beeinflussen, und sehr wenig Knochen können die Behandlung riskanter oder ungeeignet machen. Wir beurteilen jeden Fall einzeln und erklären Ihnen die Alternativen.',
-        },
-        {
-          q: 'Wann kann ich wieder arbeiten?',
-          a: 'Viele Menschen kehren nach wenigen Tagen an einen Büroarbeitsplatz zurück, sobald die Schwellung abgeklungen ist. Das hängt von Ihrer Tätigkeit, dem Umfang des Eingriffs und Ihrem Befinden ab; planen Sie daher einige ruhige Tage ein.',
-        },
-        {
-          q: 'Wie lange halten Implantate und Brücke?',
-          a: 'Bei guter Pflege können die Implantate selbst Jahrzehnte halten. Die Brücke nutzt sich wie jede Zahnversorgung mit der Zeit ab und muss nach einigen Jahren eventuell repariert oder erneuert werden.',
-        },
-      ],
-      seoDescription:
-        'All-on-4 in Prishtina: ein fester Zahnbogen auf vier Implantaten, oft ohne Knochenaufbau. Behandlung mit 3D-Planung. Jetzt Beratung vereinbaren.',
-    },
-  },
-
-  'all-on-6': {
-    sq: {
-      intro:
-        'All-on-6 zëvendëson një nofull të plotë dhëmbësh me një urë fikse të mbështetur mbi gjashtë implante. Implantet shtesë e ndajnë ngarkesën e përtypjes në më shumë pika të nofullës.',
-      body: [
-        'All-on-6 i zëvendëson dhëmbët e një nofulle me një urë fikse mbi gjashtë implante, që lidhen me kockën si rrënjë artificiale. Shpërndarja e urës mbi gjashtë implante i ndan forcat e përtypjes më gjerësisht dhe jep mbështetje shtesë përgjatë nofullës, çka mund të preferohet, për shembull, te një kafshim i fortë. Me dhëmbë fiks, përtypja dhe të folurit zakonisht ndihen shumë më të sigurta se me një protezë të lëvizshme, dhe implantet ndihmojnë të kufizohet tretja e mëtejshme e kockës.',
-        'U drejtohet atyre që u mungojnë shumica ose të gjithë dhëmbët e një nofulle, ose dhëmbët e të cilëve nuk mund të shpëtohen, që janë në gjendje të mirë shëndetësore dhe kanë kockë të mjaftueshme për gjashtë implante, ose kockë që mund të rindërtohet. Sëmundjet e mishrave duhet të trajtohen më parë, dhe është e rëndësishme gatishmëria për pastrim të kujdesshëm çdo ditë. Krahasuar me All-on-4, më shpesh kërkon shtesë kockore dhe trajtim më të gjatë.',
-        'Implantet vendosen me anestezi lokale, ndonjëherë me sedim, shpesh në të njëjtën seancë me heqjen e dhëmbëve të dëmtuar. Kur qëndrueshmëria e lejon, një urë fikse e përkohshme mund të vendoset shpejt pas ndërhyrjes. Në ditët e para ënjtja dhe shqetësimi i lehtë janë të zakonshme; ndihmojnë kompresat e ftohta dhe ushqimet e buta. Ura përfundimtare vjen pasi implantet të jenë lidhur me kockën, zakonisht pas tre deri në gjashtë muajsh, ose më vonë nëse është bërë shtesë kockore. Pastrimi i kujdesshëm çdo ditë dhe kontrollet e rregullta ndihmojnë që rezultati të zgjasë shumë vite.',
-      ],
-      steps: [
-        {
-          title: 'Konsulta',
-          text: 'Vlerësojmë dhëmbët, mishrat dhe shëndetin tuaj të përgjithshëm dhe bisedojmë nëse një nofull fikse është zgjidhja e duhur për ju.',
-        },
-        {
-          title: 'Skanimi 3D dhe plani',
-          text: 'Radiografia 3D tregon nëse ka kockë të mjaftueshme për gjashtë implante apo nëse fillimisht nevojitet shtesë kockore.',
-        },
-        {
-          title: 'Vendosja e implanteve',
-          text: 'Me anestezi lokale, dhe me sedim nëse dëshironi, gjashtë implantet vendosen sipas planit digjital.',
-        },
-        {
-          title: 'Ura e përkohshme',
-          text: 'Nëse implantet janë mjaftueshëm të qëndrueshëm, ju vendoset një urë fikse e përkohshme gjatë periudhës së shërimit.',
-        },
-        {
-          title: 'Ura përfundimtare',
-          text: 'Kur implantet janë lidhur plotësisht me kockën, ura e përhershme punohet sipas masës dhe përshtatet me kafshimin tuaj.',
-        },
-        {
-          title: 'Kontrollet e rregullta',
-          text: 'Kontrollet dhe pastrimet profesionale na lejojnë të ndjekim implantet, mishrat dhe urën me kalimin e viteve.',
-        },
-      ],
-      faq: [
-        {
-          q: 'A është All-on-6 më i mirë se All-on-4?',
-          a: 'Jo në çdo rast. Gjashtë implante e shpërndajnë ngarkesën më gjerësisht, ndërsa katër implante të pjerrëta shpesh mund të përdoren aty ku kocka është e kufizuar. Zgjedhja më e mirë varet nga kocka, kafshimi dhe shëndeti juaj, dhe mjeku jua shpjegon pas skanimit.',
-        },
-        {
-          q: 'A do të më duhet shtesë kockore?',
-          a: 'Ndoshta. Gjashtë implante kërkojnë kockë në më shumë zona të nofullës, prandaj shtesa kockore ose ngritja e sinusit në nofullën e sipërme nevojiten më shpesh se te All-on-4. Skanimi 3D e tregon këtë.',
-        },
-        {
-          q: 'Sa zgjat trajtimi?',
-          a: 'Nga ndërhyrja deri te ura përfundimtare zakonisht tre deri në gjashtë muaj. Nëse fillimisht bëhet shtesë kockore, mund të zgjasë disa muaj më shumë.',
-        },
-        {
-          q: 'Si kujdesem për urën?',
-          a: 'Lajeni me furçë dy herë në ditë dhe pastroni poshtë saj me furça ndërdhëmbore ose me dush oral. Kontrollet dhe pastrimet profesionale janë të rëndësishme, dhe nëse i shtrëngoni dhëmbët natën mund t’ju rekomandohet një mbrojtëse nate.',
-        },
-        {
-          q: 'Sa dhëmbë zëvendëson ura?',
-          a: 'Një urë për nofull të plotë zakonisht mban rreth dhjetë deri në dymbëdhjetë dhëmbë, sipas madhësisë dhe formës së nofullës. Mjeku e planifikon me ju numrin dhe formën e dhëmbëve.',
-        },
-        {
-          q: 'Sa zgjat rezultati?',
-          a: 'Me kujdes të mirë, implantet mund të zgjasin dekada. Ura konsumohet nga përdorimi i përditshëm dhe pas disa vitesh mund të ketë nevojë për riparim ose zëvendësim, gjë që kontrollet e rregullta ndihmojnë ta dallojmë herët.',
-        },
-      ],
-      seoDescription:
-        'All-on-6 në Prishtinë: një nofull e plotë dhëmbësh fiks mbi gjashtë implante që ndajnë ngarkesën e përtypjes. Trajtim i planifikuar me skanim 3D.',
-    },
-    en: {
-      intro:
-        'All-on-6 replaces a full arch of teeth with a fixed bridge supported by six implants. The extra implants share the chewing load across more points in the jaw.',
-      body: [
-        'All-on-6 replaces the teeth of one jaw with a fixed bridge on six implants, which bond with the bone as artificial roots. Spreading the bridge over six implants distributes chewing forces more widely and gives extra support along the arch, which may be preferred, for example, with a strong bite. With fixed teeth, chewing and speaking usually feel far more secure than with a removable denture, and the implants help limit further bone loss.',
-        'It is for people missing most or all of the teeth in one jaw, or whose remaining teeth cannot be saved, who are in good general health and have enough bone for six implants, or bone that can be rebuilt. Gum disease should be treated first, and a commitment to careful daily cleaning matters. Compared with All-on-4, it more often needs bone grafting and a longer treatment time.',
-        'The implants are placed under local anaesthesia, sometimes with sedation, often in the same session as removing any failing teeth. When stability allows, a provisional fixed bridge can be fitted soon after surgery. For the first few days, swelling and mild discomfort are common; cold compresses and soft food help. The final bridge follows once the implants have bonded with the bone, usually after three to six months, or later if grafting was needed. Careful daily cleaning and regular check-ups help the result last for many years.',
-      ],
-      steps: [
-        {
-          title: 'Consultation',
-          text: 'We assess your teeth, gums and general health and discuss whether a fixed full arch is the right solution for you.',
-        },
-        {
-          title: '3D scan and planning',
-          text: 'A 3D X-ray shows whether there is enough bone for six implants or whether bone grafting is needed first.',
-        },
-        {
-          title: 'Implant placement',
-          text: 'Under local anaesthesia, with sedation if you wish, the six implants are placed according to the digital plan.',
-        },
-        {
-          title: 'Provisional bridge',
-          text: 'If the implants are stable enough, you receive a temporary fixed bridge to wear during the healing period.',
-        },
-        {
-          title: 'Final bridge',
-          text: 'Once the implants have fully bonded with the bone, your permanent bridge is made to measure and adjusted to your bite.',
-        },
-        {
-          title: 'Regular check-ups',
-          text: 'Check-ups and professional cleaning let us monitor the implants, gums and bridge over the years.',
-        },
-      ],
-      faq: [
-        {
-          q: 'Is All-on-6 better than All-on-4?',
-          a: 'Not in every case. Six implants spread the load more widely, while four angled implants can often be used where bone is limited. The better choice depends on your bone, bite and health, and your dentist will explain it after the scan.',
-        },
-        {
-          q: 'Will I need bone grafting?',
-          a: 'Possibly. Six implants need bone in more areas of the jaw, so a bone graft, or a sinus lift in the upper jaw, is needed more often than with All-on-4. Your 3D scan will show this.',
-        },
-        {
-          q: 'How long does treatment take?',
-          a: 'From surgery to the final bridge usually takes three to six months. If bone grafting comes first, it can take several months longer.',
-        },
-        {
-          q: 'How do I care for the bridge?',
-          a: 'Brush it twice a day and clean underneath it with interdental brushes or a water flosser. Regular check-ups and professional cleaning are important, and a night guard may be recommended if you grind your teeth.',
-        },
-        {
-          q: 'How many teeth does the bridge replace?',
-          a: 'A full-arch bridge usually carries around ten to twelve teeth, depending on the size and shape of your jaw. Your dentist plans the number and shape of the teeth with you.',
-        },
-        {
-          q: 'How long does the result last?',
-          a: 'With good care, the implants can last for decades. The bridge wears with daily use and may need repair or renewal after a number of years, which regular check-ups help to spot early.',
-        },
-      ],
-      seoDescription:
-        'All-on-6 dental implants in Prishtina: a fixed full arch of teeth on six implants that share the chewing load. Planned with 3D imaging.',
-    },
-    de: {
-      intro:
-        'All-on-6 ersetzt einen kompletten Zahnbogen durch eine feste Brücke auf sechs Implantaten. Die zusätzlichen Implantate verteilen die Kaukraft auf mehr Punkte im Kiefer.',
-      body: [
-        'All-on-6 ersetzt die Zähne eines Kiefers durch eine feste Brücke auf sechs Implantaten, die als künstliche Wurzeln mit dem Knochen verwachsen. Sechs Implantate verteilen die Kaukräfte breiter und geben der Brücke zusätzlichen Halt entlang des Kiefers, was etwa bei einem kräftigen Biss bevorzugt werden kann. Mit festen Zähnen fühlen sich Kauen und Sprechen meist deutlich sicherer an als mit einer herausnehmbaren Prothese, und die Implantate helfen, weiteren Knochenabbau zu begrenzen.',
-        'Die Lösung richtet sich an Menschen, denen die meisten oder alle Zähne eines Kiefers fehlen oder deren restliche Zähne nicht zu erhalten sind, die allgemein gesund sind und genug Knochen für sechs Implantate haben, oder Knochen, der aufgebaut werden kann. Eine Parodontitis sollte vorher behandelt werden, und die Bereitschaft zu sorgfältiger täglicher Pflege ist wichtig. Im Vergleich zu All-on-4 ist häufiger ein Knochenaufbau nötig, und die Behandlung dauert länger.',
-        'Die Implantate werden unter örtlicher Betäubung gesetzt, manchmal mit Sedierung, oft in derselben Sitzung, in der nicht erhaltbare Zähne entfernt werden. Wenn die Stabilität es erlaubt, kann bald nach dem Eingriff eine feste provisorische Brücke eingesetzt werden. In den ersten Tagen sind Schwellungen und leichte Beschwerden üblich; kühlende Kompressen und weiche Kost helfen. Die endgültige Brücke folgt, wenn die Implantate mit dem Knochen verwachsen sind, meist nach drei bis sechs Monaten, nach einem Knochenaufbau später. Sorgfältige tägliche Reinigung und regelmäßige Kontrollen tragen dazu bei, dass das Ergebnis viele Jahre hält.',
-      ],
-      steps: [
-        {
-          title: 'Beratung',
-          text: 'Wir beurteilen Zähne, Zahnfleisch und Ihre allgemeine Gesundheit und besprechen, ob ein fester Zahnbogen die richtige Lösung für Sie ist.',
-        },
-        {
-          title: '3D-Aufnahme und Planung',
-          text: 'Eine 3D-Röntgenaufnahme zeigt, ob genug Knochen für sechs Implantate vorhanden ist oder ob zuerst ein Knochenaufbau nötig ist.',
-        },
-        {
-          title: 'Implantation',
-          text: 'Unter örtlicher Betäubung, auf Wunsch mit Sedierung, werden die sechs Implantate nach der digitalen Planung gesetzt.',
-        },
-        {
-          title: 'Provisorische Brücke',
-          text: 'Sind die Implantate stabil genug, erhalten Sie für die Einheilzeit eine feste provisorische Brücke.',
-        },
-        {
-          title: 'Endgültige Brücke',
-          text: 'Sind die Implantate vollständig mit dem Knochen verwachsen, wird Ihre definitive Brücke nach Maß gefertigt und an Ihren Biss angepasst.',
-        },
-        {
-          title: 'Regelmäßige Kontrollen',
-          text: 'Kontrollen und professionelle Reinigung ermöglichen es uns, Implantate, Zahnfleisch und Brücke über die Jahre im Blick zu behalten.',
-        },
-      ],
-      faq: [
-        {
-          q: 'Ist All-on-6 besser als All-on-4?',
-          a: 'Nicht in jedem Fall. Sechs Implantate verteilen die Last breiter, während vier schräg gesetzte Implantate oft dort möglich sind, wo wenig Knochen vorhanden ist. Die bessere Wahl hängt von Knochen, Biss und Gesundheit ab; Ihr Zahnarzt erklärt sie Ihnen nach der Aufnahme.',
-        },
-        {
-          q: 'Brauche ich einen Knochenaufbau?',
-          a: 'Möglicherweise. Sechs Implantate benötigen Knochen in mehr Bereichen des Kiefers, daher sind ein Knochenaufbau oder im Oberkiefer ein Sinuslift häufiger nötig als bei All-on-4. Ihre 3D-Aufnahme zeigt das.',
-        },
-        {
-          q: 'Wie lange dauert die Behandlung?',
-          a: 'Vom Eingriff bis zur endgültigen Brücke meist drei bis sechs Monate. Geht ein Knochenaufbau voraus, kann es einige Monate länger dauern.',
-        },
-        {
-          q: 'Wie pflege ich die Brücke?',
-          a: 'Putzen Sie sie zweimal täglich und reinigen Sie darunter mit Interdentalbürsten oder einer Munddusche. Regelmäßige Kontrollen und professionelle Reinigung sind wichtig; wenn Sie mit den Zähnen knirschen, kann eine Aufbissschiene für die Nacht empfohlen werden.',
-        },
-        {
-          q: 'Wie viele Zähne ersetzt die Brücke?',
-          a: 'Eine Brücke für den ganzen Kiefer trägt meist etwa zehn bis zwölf Zähne, je nach Größe und Form Ihres Kiefers. Ihr Zahnarzt plant Anzahl und Form der Zähne gemeinsam mit Ihnen.',
-        },
-        {
-          q: 'Wie lange hält das Ergebnis?',
-          a: 'Bei guter Pflege können die Implantate Jahrzehnte halten. Die Brücke nutzt sich im Alltag ab und muss nach einigen Jahren eventuell repariert oder erneuert werden; regelmäßige Kontrollen helfen, das früh zu erkennen.',
-        },
-      ],
-      seoDescription:
-        'All-on-6 in Prishtina: ein fester Zahnbogen auf sechs Implantaten, die die Kaukraft verteilen. Behandlung mit 3D-Planung. Beratung vereinbaren.',
+        'Einzelimplantat in Prishtina: einen fehlenden Zahn mit Implantat, Abutment und individueller Krone ersetzen, häufig aus Zirkon. Jetzt Beratung vereinbaren.',
     },
   },
 };

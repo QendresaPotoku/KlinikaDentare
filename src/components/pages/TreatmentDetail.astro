@@ -1,6 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 import TreatmentBar from '../TreatmentBar.astro';
+import TreatmentSidebar from '../TreatmentSidebar.astro';
 import Faq from '../Faq.astro';
 import ClosingCta from '../ClosingCta.astro';
 import Arrow from '../Arrow.astro';
@@ -11,9 +12,9 @@ import TreatmentAnimation from '../TreatmentAnimation.astro';
 import { animations } from '../../data/animations';
 import { useT, paths, type Lang } from '../../i18n';
 import { links } from '../../config/site';
-import { treatments, subImage, subDetailImage, type Treatment, type SubTreatment } from '../../data/treatments';
+import { treatments, subImage, subDetailImage, serviceText, type Treatment, type SubTreatment } from '../../data/treatments';
 
-/** A category page (Dental implants) or, with `sub`, one of its sub-treatments (All-on-4). */
+/** A category page (Dental implants) or, with `sub`, one of its sub-treatments (Single implants). */
 interface Props { lang: Lang; treatment: Treatment; sub?: SubTreatment }
 const { lang, treatment, sub } = Astro.props;
 const t = useT(lang);
@@ -27,6 +28,9 @@ const imageFocus = sub?.imageFocus;
 const catHref = paths.treatment(lang, cat.slug);
 const subHref = (s: SubTreatment) => paths.subTreatment(lang, cat.slug, s.copy[lang].slug);
 const num = (s: SubTreatment) => String(treatment.children.indexOf(s) + 1).padStart(2, '0');
+
+// Category page: every service of the group (the clinic's price list, without prices).
+const services = sub ? [] : treatment.services.map((s) => serviceText(treatment, s, lang));
 
 // Sub-treatment page: list its siblings.
 const options = sub ? treatment.children.filter((s) => s !== sub) : treatment.children;
@@ -58,6 +62,11 @@ const [firstPara, ...morePara] = body;
 
 <article>
   <TreatmentBar lang={lang} treatment={treatment} sub={sub} />
+
+  <!-- Wide screens: treatment list in a sticky sidebar beside the hero, description and services -->
+  <div class="tlayout">
+  <TreatmentSidebar lang={lang} treatment={treatment} sub={sub} />
+  <div class="tmain">
 
   <!-- Hero: everything about the treatment on the left, its photo on the right, all on the first screen -->
   <header class="hero container">
@@ -116,6 +125,43 @@ const [firstPara, ...morePara] = body;
       </figure>
     </div>
   </section>
+
+  {services.length > 0 && (
+    <section class="options container" aria-labelledby="services-title">
+      <div class="grid">
+        <div class="options-head options-head--sticky">
+          <h2 id="services-title" class="label" data-reveal="fade">{tp.services}</h2>
+          <span class="options-count" data-reveal="fade">{String(services.length).padStart(2, '0')}</span>
+          <p class="options-text" data-reveal="fade">{tp.servicesText}</p>
+        </div>
+        <ol class="option-list">
+          {services.map((s, i) => {
+            const inner = (
+              <>
+                <span class="index-num">{String(i + 1).padStart(2, '0')}</span>
+                <span class="option-text">
+                  <span class="option-name">{s.name}</span>
+                  <span class="option-sum">{s.line}</span>
+                </span>
+              </>
+            );
+            return (
+              <li data-reveal="fade">
+                {s.sub ? (
+                  <a class="option" href={subHref(s.sub)}>{inner}<span class="option-go"><Arrow /></span></a>
+                ) : (
+                  <div class="option">{inner}</div>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    </section>
+  )}
+
+  </div>
+  </div>
 
   {showExplainer && <ImplantExplainer lang={lang} />}
 
@@ -181,6 +227,42 @@ const [firstPara, ...morePara] = body;
 </article>
 
 <style>
+  /* Sidebar + content on wide screens; below 1100px the sidebar is hidden and the sections stack as before */
+  @media (min-width: 1101px) {
+    .tlayout {
+      /* The sidebar sits flush against the left edge of the window; only the content keeps the page gutter */
+      --tside-w: clamp(256px, 18vw, 304px);
+      display: grid;
+      grid-template-columns: var(--tside-w) minmax(0, 1fr);
+      column-gap: clamp(40px, 4vw, 72px);
+      padding-right: var(--gutter);
+      padding-top: var(--header-h);
+      transition:
+        grid-template-columns 0.7s var(--ease),
+        column-gap 0.7s var(--ease);
+    }
+    /* Sidebar closed: a slim rail, the content takes the freed width */
+    :global(html[data-tside='closed']) .tlayout {
+      grid-template-columns: 56px minmax(0, 1fr);
+      column-gap: clamp(32px, 3.5vw, 64px);
+    }
+    .tmain {
+      min-width: 0;
+      /* Very wide screens: keep the content at a readable width, centred in the space left of the sidebar */
+      width: 100%;
+      max-width: calc(var(--max) - 2 * var(--gutter));
+      justify-self: center;
+    }
+    .tmain > .container {
+      max-width: none;
+      padding-inline: 0;
+    }
+    /* The content column is narrower, so the title scales down with it */
+    .tmain .hero-title {
+      font-size: clamp(2.25rem, 3.4vw, 3.75rem);
+    }
+  }
+
   .head-ctas {
     display: flex;
     flex-wrap: wrap;
@@ -260,6 +342,21 @@ const [firstPara, ...morePara] = body;
     gap: 20px;
     justify-items: start;
   }
+  /* Category services: the heading and intro stay in view beside a long list */
+  .options-head--sticky {
+    position: sticky;
+    top: calc(var(--header-h) + var(--tbar-h, 0px) + 24px);
+    transition: top 0.7s var(--ease);
+    /* Keeps space before the next section at the end of the list */
+    margin-bottom: clamp(32px, 4vw, 56px);
+  }
+  :global(body:has(.site-header.is-hidden:not(.menu-open))) .options-head--sticky {
+    top: calc(var(--tbar-h, 0px) + 24px);
+  }
+  .options-text {
+    color: var(--muted);
+    max-width: 34ch;
+  }
   .options-count {
     font-size: var(--fs-display);
     font-weight: 300;
@@ -298,7 +395,7 @@ const [firstPara, ...morePara] = body;
     grid-template-columns: 40px 1fr auto;
     align-items: center;
     gap: 16px;
-    padding-block: clamp(20px, 2vw, 28px);
+    padding-block: clamp(16px, 1.4vw, 20px);
     border-bottom: 1px solid var(--line);
   }
   .option .index-num {
@@ -310,7 +407,7 @@ const [firstPara, ...morePara] = body;
     gap: 6px;
   }
   .option-name {
-    font-size: clamp(1.3125rem, 1.9vw, 1.875rem);
+    font-size: clamp(1.1875rem, 1.5vw, 1.5rem);
     font-weight: 400;
     line-height: 1.15;
     letter-spacing: -0.02em;
@@ -338,6 +435,10 @@ const [firstPara, ...morePara] = body;
   .option:hover .option-name,
   .option:focus-visible .option-name {
     color: var(--crimson);
+  }
+  /* Services without their own page are plain rows, not links */
+  div.option:hover .option-name {
+    color: inherit;
   }
   .option:hover .option-go,
   .option:focus-visible .option-go {
@@ -417,7 +518,7 @@ const [firstPara, ...morePara] = body;
     color: var(--crimson);
   }
   /* The explainer follows straight on from the about section */
-  .about + :global(.explainer) {
+  .tlayout:has(.tmain > .about:last-child) + :global(.explainer) {
     padding-top: 0;
     padding-bottom: var(--section-sm);
   }
@@ -552,6 +653,11 @@ const [firstPara, ...morePara] = body;
     }
     .options-count {
       display: none;
+    }
+    /* One column on small screens: the head sits above the list and scrolls normally */
+    .options-head--sticky {
+      position: static;
+      margin-bottom: 0;
     }
     .option {
       grid-template-columns: 24px 1fr auto;

@@ -1,0 +1,534 @@
+---
+/**
+ * Desktop treatment navigation: a sticky list of every category beside the page content.
+ * The current category is open and shows its sub-treatments; any other category with
+ * sub-treatments can be opened in place with its arrow, without leaving the page.
+ * Below 1100px it is hidden and TreatmentBar (a compact picker) takes over.
+ */
+import Arrow from './Arrow.astro';
+import { useT, paths, type Lang } from '../i18n';
+import { links } from '../config/site';
+import { treatments, type Treatment, type SubTreatment } from '../data/treatments';
+
+interface Props { lang: Lang; treatment: Treatment; sub?: SubTreatment }
+const { lang, treatment, sub } = Astro.props;
+const t = useT(lang);
+const tp = t.treatmentPage;
+---
+
+<!-- Restore a closed sidebar before the first paint, so it never flashes open -->
+<script is:inline>
+  try {
+    if (localStorage.getItem('tside') === 'closed') document.documentElement.dataset.tside = 'closed';
+  } catch {}
+</script>
+
+<aside class="tside" aria-label={tp.barLabel}>
+  <div class="tside-sticky">
+  <div class="tside-inner" id="tside-panel" data-tside-panel data-lenis-prevent>
+    <div class="top">
+      <a class="all" href={paths.treatments(lang)}>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 1.5h5v5h-5zM9.5 1.5h5v5h-5zM1.5 9.5h5v5h-5zM9.5 9.5h5v5h-5z" /></svg>
+        {tp.back}
+      </a>
+      <button class="close" type="button" aria-controls="tside-panel" aria-label={tp.hideList} title={tp.hideList} data-tside-close>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" /></svg>
+      </button>
+    </div>
+
+    <ul class="cats">
+      {treatments.map((tr) => {
+        const active = tr === treatment;
+        const slug = tr.copy[lang].slug;
+        const hasSubs = tr.children.length > 0;
+        const listId = `tside-${tr.id}`;
+        return (
+          <li class="cat" data-open={active ? '' : undefined} data-active={active ? '' : undefined}>
+            <div class="cat-row">
+              <a class="cat-link" href={paths.treatment(lang, slug)} aria-current={active && !sub ? 'page' : undefined}>
+                {tr.copy[lang].name}
+              </a>
+              {hasSubs && (
+                <button
+                  class="cat-toggle"
+                  type="button"
+                  aria-expanded={active ? 'true' : 'false'}
+                  aria-controls={listId}
+                  aria-label={tr.copy[lang].name}
+                  data-tside-toggle
+                >
+                  <span aria-hidden="true"></span>
+                </button>
+              )}
+            </div>
+            {hasSubs && (
+              <div class="subs-wrap" id={listId}>
+                <ul class="subs">
+                  <li>
+                    <a class="sub" href={paths.treatment(lang, slug)} aria-current={active && !sub ? 'page' : undefined} tabindex={active ? undefined : -1}>
+                      {tp.overview}
+                    </a>
+                  </li>
+                  {tr.children.map((s) => (
+                    <li>
+                      <a
+                        class="sub"
+                        href={paths.subTreatment(lang, slug, s.copy[lang].slug)}
+                        aria-current={s === sub ? 'page' : undefined}
+                        tabindex={active ? undefined : -1}
+                      >
+                        {s.copy[lang].name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+
+    <a class="book link link--crimson" href={links.tel} data-book>{t.common.book}<Arrow /></a>
+  </div>
+
+  <!-- Closed state: a slim rail that names the current treatment and reopens the list -->
+  <button class="rail" type="button" aria-controls="tside-panel" aria-label={tp.showList} title={tp.showList} data-tside-open>
+    <span class="rail-btn" aria-hidden="true">
+      <svg viewBox="0 0 16 16"><path d="M6 3.5 10.5 8 6 12.5" /></svg>
+    </span>
+    <span class="rail-text" aria-hidden="true">
+      <span class="rail-label">{tp.barLabel}</span>
+      <span class="rail-dot"></span>
+      <span class="rail-name">{treatment.copy[lang].name}</span>
+    </span>
+  </button>
+  </div>
+</aside>
+
+<script>
+  // Open / close the whole sidebar. The choice is remembered across pages.
+  const root = document.documentElement;
+  const panel = document.querySelector<HTMLElement>('[data-tside-panel]');
+  const rail = document.querySelector<HTMLButtonElement>('[data-tside-open]');
+  const closeBtn = document.querySelector<HTMLButtonElement>('[data-tside-close]');
+  const layout = panel?.closest<HTMLElement>('.tlayout');
+  const sync = () => {
+    const closed = root.dataset.tside === 'closed';
+    if (panel) panel.inert = closed;
+    if (rail) rail.inert = !closed;
+  };
+  const setClosed = (closed: boolean) => {
+    if (closed) root.dataset.tside = 'closed';
+    else delete root.dataset.tside;
+    try {
+      localStorage.setItem('tside', closed ? 'closed' : 'open');
+    } catch {}
+    sync();
+    (closed ? rail : closeBtn)?.focus({ preventScroll: true });
+  };
+  sync();
+  closeBtn?.addEventListener('click', () => setClosed(true));
+  rail?.addEventListener('click', () => setClosed(false));
+  // The content column changes width: let scroll animations and sticky elements re-measure once it settles.
+  layout?.addEventListener('transitionend', (e) => {
+    if (e.target === layout && e.propertyName === 'grid-template-columns') window.dispatchEvent(new Event('resize'));
+  });
+</script>
+
+<script>
+  // Open or close a category's sub-treatments in place. Closed lists keep their links out of the tab order.
+  document.querySelectorAll<HTMLButtonElement>('[data-tside-toggle]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const item = btn.closest<HTMLElement>('.cat');
+      if (!item) return;
+      const open = !item.hasAttribute('data-open');
+      item.toggleAttribute('data-open', open);
+      btn.setAttribute('aria-expanded', String(open));
+      item.querySelectorAll<HTMLAnchorElement>('.sub').forEach((a) => {
+        if (open) a.removeAttribute('tabindex');
+        else a.setAttribute('tabindex', '-1');
+      });
+    });
+  });
+
+  // On short screens, scroll the list only if the current category would otherwise be cut off.
+  const inner = document.querySelector<HTMLElement>('[data-tside-panel]');
+  const current = inner?.querySelector<HTMLElement>('.cat[data-active]');
+  if (inner && current) {
+    const bottom = current.offsetTop - inner.offsetTop + current.offsetHeight;
+    if (bottom > inner.clientHeight) inner.scrollTop = bottom - inner.clientHeight + 24;
+  }
+</script>
+
+<style>
+  .tside {
+    /* Full-height column so the divider runs the length of the content.
+       clip (not hidden) keeps the sticky child working while the column narrows. */
+    border-right: 1px solid var(--line);
+    overflow: clip;
+  }
+  .tside-sticky {
+    position: sticky;
+    top: var(--header-h);
+    display: grid;
+    transition: top 0.7s var(--ease);
+  }
+  /* Follow the header when it slides away on scroll */
+  :global(body:has(.site-header.is-hidden:not(.menu-open))) .tside-sticky {
+    top: 0;
+  }
+  /* The open list and the closed rail share one cell and cross-fade */
+  .tside-inner,
+  .rail {
+    grid-area: 1 / 1;
+  }
+
+  /* Open list. Fixed width, so the text is clipped (never rewrapped) while the column animates */
+  .tside-inner {
+    width: calc(var(--tside-w, 260px) - 1px);
+    max-height: calc(100svh - var(--header-h));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    display: grid;
+    align-content: start;
+    gap: 28px;
+    padding: clamp(28px, 3vw, 48px) clamp(16px, 1.6vw, 28px) 32px clamp(16px, 1.4vw, 24px);
+    /* Reopening: the column widens first, then the list fades in */
+    transition:
+      opacity 0.45s var(--ease) 0.22s,
+      transform 0.7s var(--ease) 0.12s,
+      max-height 0.7s var(--ease),
+      visibility 0s;
+  }
+  :global(body:has(.site-header.is-hidden:not(.menu-open))) .tside-inner {
+    max-height: 100svh;
+  }
+  /* Scrollbar only appears while the list is hovered (on short screens) */
+  .tside-inner:hover {
+    scrollbar-color: var(--sand) transparent;
+  }
+  :global(html[data-tside='closed']) .tside-inner {
+    opacity: 0;
+    transform: translateX(-24px);
+    visibility: hidden;
+    transition:
+      opacity 0.25s var(--ease),
+      transform 0.6s var(--ease),
+      max-height 0.7s var(--ease),
+      visibility 0s linear 0.6s;
+  }
+
+  /* Top row: all treatments + close */
+  .top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .close,
+  .rail-btn {
+    flex: none;
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    color: var(--ink);
+    transition: background-color 0.4s var(--ease), border-color 0.4s var(--ease), color 0.4s var(--ease);
+  }
+  .close svg,
+  .rail-btn svg {
+    width: 13px;
+    height: 13px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.5s var(--ease);
+  }
+  .close:hover,
+  .rail:hover .rail-btn {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+  }
+  .close:hover svg {
+    transform: translateX(-2px);
+  }
+  .rail:hover .rail-btn svg {
+    transform: translateX(2px);
+  }
+
+  /* Closed rail: arrow button + the current treatment written vertically */
+  .rail {
+    align-self: start;
+    justify-self: start;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+    /* Exactly the closed column (56px minus the divider), so it is never clipped */
+    width: 55px;
+    padding: clamp(28px, 3vw, 48px) 0 32px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-10px);
+    transition:
+      opacity 0.2s var(--ease),
+      transform 0.4s var(--ease),
+      visibility 0s linear 0.4s;
+  }
+  :global(html[data-tside='closed']) .rail {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition:
+      opacity 0.45s var(--ease) 0.3s,
+      transform 0.7s var(--ease) 0.25s,
+      visibility 0s;
+  }
+  /* Keep the keyboard focus ring inside the narrow column, where it isn't clipped */
+  .rail:focus-visible {
+    outline-offset: -4px;
+  }
+  .rail-text {
+    writing-mode: vertical-rl;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    max-height: calc(100svh - var(--header-h) - 160px);
+    overflow: hidden;
+  }
+  .rail-label {
+    font-size: var(--fs-label);
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .rail-dot {
+    flex: none;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--crimson);
+  }
+  .rail-name {
+    font-size: 0.875rem;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.4s var(--ease);
+  }
+  .rail:hover .rail-name {
+    color: var(--crimson);
+  }
+
+  /* All treatments */
+  .all {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    white-space: nowrap;
+    font-size: var(--fs-label);
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    transition: color 0.4s var(--ease);
+  }
+  .all svg {
+    flex: none;
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.3;
+  }
+  .all:hover {
+    color: var(--crimson);
+  }
+
+  /* Categories */
+  .cats {
+    border-top: 1px solid var(--line);
+  }
+  .cat {
+    border-bottom: 1px solid var(--line);
+  }
+  .cat-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  /* Crimson marker on the current category; a light one previews on hover */
+  .cat-row::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 2px;
+    height: 20px;
+    margin-top: -10px;
+    background: var(--crimson);
+    transform: scaleY(0);
+    transition: transform 0.5s var(--ease), background-color 0.4s var(--ease);
+  }
+  .cat:not([data-active]) .cat-row:hover::before {
+    background: var(--sand);
+    transform: scaleY(1);
+  }
+  .cat[data-active] .cat-row::before {
+    transform: scaleY(1);
+  }
+  .cat-link {
+    flex: 1;
+    min-width: 0;
+    padding: 15px 0 15px 16px;
+    font-size: 0.9375rem;
+    line-height: 1.35;
+    color: var(--ink-soft);
+    transition: color 0.4s var(--ease), transform 0.5s var(--ease);
+  }
+  .cat-link:hover {
+    color: var(--ink);
+    transform: translateX(3px);
+  }
+  .cat[data-active] .cat-link {
+    color: var(--crimson);
+    font-weight: 500;
+    transform: none;
+  }
+
+  /* Plus/minus that opens a category's sub-treatments */
+  .cat-toggle {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: var(--muted);
+    transition: background-color 0.4s var(--ease), color 0.4s var(--ease);
+  }
+  .cat-toggle:hover {
+    background: var(--stone);
+    color: var(--ink);
+  }
+  .cat-toggle span {
+    position: relative;
+    width: 10px;
+    height: 10px;
+  }
+  .cat-toggle span::before,
+  .cat-toggle span::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 4.5px;
+    height: 1px;
+    background: currentColor;
+    transition: transform 0.5s var(--ease);
+  }
+  .cat-toggle span::after {
+    transform: rotate(90deg);
+  }
+  .cat[data-open] .cat-toggle span::after {
+    transform: rotate(0deg);
+  }
+
+  /* Sub-treatments: height animates from 0 to auto through the grid row */
+  .subs-wrap {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.55s var(--ease);
+  }
+  .cat[data-open] .subs-wrap {
+    grid-template-rows: 1fr;
+  }
+  .subs {
+    min-height: 0;
+    overflow: hidden;
+    margin-left: 16px;
+    opacity: 0;
+    transition: opacity 0.4s var(--ease);
+  }
+  .cat[data-open] .subs {
+    opacity: 1;
+    transition-delay: 0.08s;
+  }
+  .subs li:first-child {
+    padding-top: 2px;
+  }
+  .subs li:last-child {
+    padding-bottom: 14px;
+  }
+  .sub {
+    position: relative;
+    display: block;
+    padding: 7px 0 7px 18px;
+    border-left: 1px solid var(--line);
+    font-size: 0.875rem;
+    line-height: 1.4;
+    color: var(--muted);
+    transition: color 0.4s var(--ease), border-color 0.4s var(--ease);
+  }
+  /* 2px marker over the guide line: grey preview on hover, crimson on the current page */
+  .sub::before {
+    content: '';
+    position: absolute;
+    left: -1px;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    background: var(--muted-light);
+    transform: scaleY(0);
+    transition: transform 0.45s var(--ease), background-color 0.4s var(--ease);
+  }
+  .sub:hover {
+    color: var(--ink);
+  }
+  .sub:hover::before {
+    transform: scaleY(1);
+  }
+  .sub[aria-current='page'] {
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .sub[aria-current='page']::before {
+    background: var(--crimson);
+    transform: scaleY(1);
+  }
+
+  .book {
+    justify-self: start;
+    margin-top: 4px;
+  }
+
+  @media (max-width: 1100px) {
+    .tside {
+      display: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tside-inner,
+    .rail,
+    :global(html[data-tside='closed']) .tside-inner,
+    :global(html[data-tside='closed']) .rail,
+    .subs-wrap,
+    .subs,
+    .cat-link,
+    .cat-row::before {
+      transition: none;
+    }
+  }
+</style>
