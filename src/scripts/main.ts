@@ -511,6 +511,8 @@ $$<HTMLAnchorElement>('.langs a[hreflang], .mm-langs a[hreflang]').forEach((a) =
 
 /* ------------------------------------------------------------------ booking popup */
 // Any element with [data-book] opens the online booking flow (src/scripts/booking.ts).
+// Only active when the popup is on the page (site.onlineBooking in src/config/site.ts). While it is
+// switched off, [data-book] buttons are left alone and their tel: link calls the clinic.
 const booking = $<HTMLDialogElement>('[data-booking]');
 if (booking) {
   const flow = createBookingFlow(booking);

@@ -62,7 +62,9 @@ const xDefault = new URL(isHome ? '/' : alternates[defaultLang], Astro.site);
     </main>
     <Footer lang={lang} />
     <MobileBar lang={lang} />
-    <BookingModal lang={lang} />
+    {/* Booking form is switched off in src/config/site.ts (onlineBooking). Without the popup on the page,
+        "Book appointment" buttons are plain tel: links and nothing touches the database. */}
+    {site.onlineBooking && <BookingModal lang={lang} />}
 
     <script>
       import '../scripts/main';

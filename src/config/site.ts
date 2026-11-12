@@ -35,6 +35,11 @@ export const site = {
     facebook: '',
   },
 
+  // Online booking form (popup that saves to the database and notifies the admin).
+  // OFF for now: every "Book appointment" button just calls the clinic's phone number.
+  // Set to `true` to bring the form back — all its code is kept untouched.
+  onlineBooking: false,
+
   // Introductory clinic video. Leave `src` empty until the clinic supplies the file (e.g. /video/klinika.mp4).
   video: { src: '' },
 } as const;

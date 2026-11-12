@@ -7,7 +7,7 @@
 import { Image } from 'astro:assets';
 import Arrow from '../Arrow.astro';
 import Icon from '../Icon.astro';
-import { useT, paths, type Lang } from '../../i18n';
+import { useT, type Lang } from '../../i18n';
 import { links } from '../../config/site';
 import photo from '../../assets/photos/hero-instruments.jpg';
 
@@ -39,7 +39,7 @@ const t = useT(lang);
     <h1 id="hero-title" class="name" data-type>{t.hero.headline}</h1>
     <p class="sub" data-split data-immediate data-delay="0.55">{t.hero.sub}</p>
     <div class="cta-wrap rise">
-      <a class="btn btn--primary" href={paths.section(lang, 'contact')} data-book>
+      <a class="btn btn--primary" href={links.tel} data-book>
         {t.hero.cta1}<Arrow />
       </a>
       <a class="btn btn--light btn-wa" href={links.whatsapp} target="_blank" rel="noopener" aria-label="WhatsApp">
